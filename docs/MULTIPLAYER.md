@@ -8,7 +8,7 @@
 2. Mở client ở `http://localhost:5173`, chọn **Tạo phòng**, nhập tên. Mã phòng gồm sáu chữ số.
 3. Mở tab/trình duyệt thứ hai, chọn **Vào phòng**, nhập tên và mã phòng. Phòng hỗ trợ 2–4 người.
 4. Mọi người nhấn **Sẵn sàng**, chủ phòng nhấn **Bắt đầu**. WASD/mũi tên để di chuyển, giữ Space để tăng tốc và tiêu hao nộ; cuộn chuột đổi zoom. Điện thoại dùng các nút hướng và giữ CHẠY, có thể giữ nhiều ngón cùng lúc.
-5. Các mốc 1:00, 2:30, 4:00, 5:30, 7:00 của thời gian chơi mở trạm câu hỏi chung. Mọi người trả lời, xem giải thích, rồi từng người nhấn tiếp tục. Chỉ khi cả phòng đã đọc xong, server mới cho trận chạy lại. Đáp án sai không khóa trận; trả lời đúng hồi tối đa 20 nộ.
+5. Các mốc 1:00, 2:30, 4:00, 5:30, 7:00 mở câu hỏi giống nhau cho cả phòng. Chỉ người đang trả lời đứng yên và được bảo vệ khỏi cắt đuôi; không được cắt đuôi người khác khi học. Ai trả lời và xem giải thích xong được tiếp tục ngay; đồng hồ, đối thủ và kinh tế vẫn chạy. Đáp án sai vẫn được đi tiếp; đúng hồi tối đa 20 nộ một lần.
 6. Hết 8 phút hoặc còn dưới hai người, trận kết thúc. Xếp hạng theo điểm kinh tế; chủ phòng có thể đưa cả phòng về lobby để chuẩn bị lượt mới.
 
 Khi phát triển, Vite proxy Socket.IO về `http://localhost:3001`, hoặc dùng `VITE_SERVER_URL`. Production luôn dùng cùng origin với trang web. Hướng dẫn Docker/Render nằm trong [DEPLOY_RENDER.md](DEPLOY_RENDER.md).
@@ -19,7 +19,7 @@ Khi phát triển, Vite proxy Socket.IO về `http://localhost:3001`, hoặc dù
 - Server mô phỏng 60 bước/giây, gửi snapshot 10 lần/giây. Chỉ gửi lại ownership khi revision đổi. Client làm mượt vị trí giữa snapshot, snap khi hồi sinh, không dự đoán gameplay hay tự chạy capture. Thuật toán TerritoryCaptureSystem hiện có được tái sử dụng.
 - Bốn khu giữ cách tính điểm giản lược của game: sản xuất, thương nghiệp, lợi tức theo chu kỳ, đất đai và trung tâm. Server cache số ô theo khu đến khi ownership đổi. Điểm game không phải mô hình định lượng của giáo trình.
 - `setupOnline`: quản lý membership, mã phòng, chủ phòng, ready/start, snapshot và quiz. Chỉ chủ phòng bắt đầu khi mọi người ready; không vào giữa trận. Đáp án/explanation chỉ gửi cho người đã trả lời; không phát toàn bộ đáp án trong snapshot.
-- QuizDirector dùng chung với local. Server khóa mô phỏng trong trạm; chờ cả trả lời và xác nhận đọc xong. Client không tự bỏ pause hoặc tự trao phần thưởng. Mỗi trận có UUID riêng để loại input/answer/continue của lượt cũ. Phần thưởng chỉ được cộng khi kết thúc round một lần.
+- RaceQuizDirector dùng chung với local. Mỗi người có hàng đợi câu hỏi và cổng trả lời/đọc giải thích riêng; mốc mới vẫn đến theo thời gian trận, không ghi đè câu chưa xong. Server xác minh chuyển động, bảo vệ người học và cộng thưởng đúng một lần khi tiếp tục. Mỗi trận có UUID riêng để loại input/answer/continue của lượt cũ. `snapshot.paused` không còn thể hiện câu hỏi; `player.learning` là trạng thái cá nhân.
 - OnlineScene dùng lại CityMapRenderer, PlayerRenderer, TerritoryRenderer và camera. HUD React hiển thị mã phòng, đồng hồ, mọi người, nộ, minimap, kết quả và nút rời trận. ESC không tạm dừng trận online của người khác.
 
 ## Rời phòng và mất kết nối
@@ -27,13 +27,13 @@ Khi phát triển, Vite proxy Socket.IO về `http://localhost:3001`, hoặc dù
 - Socket rời/mất kết nối bị loại ngay khỏi trận; xóa trail và lãnh thổ, loại khỏi quorum câu hỏi. Không để người còn lại chờ một người đã rời.
 - Chủ phòng rời: chuyển quyền cho người còn lại đầu tiên. Phòng hết người được xóa khỏi RAM. Còn dưới hai người thì kết thúc trận.
 - Client có thông báo khi mất kết nối; kết nối lại không khôi phục phiên cũ. Có thể tạo/vào phòng mới. Chưa có grace period hoặc reconnect token.
-- Người còn kết nối nhưng chưa trả lời sẽ giữ trạm mở. Không tự chọn đáp án hoặc ép timeout để thay quyết định học tập của người đó; có thể rời trận.
+- Người chưa trả lời chỉ giữ câu hỏi của riêng mình; không chặn đối thủ hoặc kết thúc trận. Có thể rời trận, không có nút bỏ qua câu hỏi để tiếp tục.
 
 ## Sửa nền tảng khi bắt đầu phase
 
 Ở thời điểm đọc repo, PhaserGame và MainScene chứa các đoạn phiên bản cũ/mới bị ghép trùng, client báo lỗi cú pháp. Đã lưu bản sao trước sửa tại `.tmp/phase-multiplayer-backup`, bỏ đoạn trùng và khôi phục local: pixel rendering, sprint, discovery, quiz, pause/resize/cleanup. Giữ bố cục home hiện có; nối nút tạo/vào phòng thật và cập nhật nhãn phase.
 
-## Kiểm chứng
+## Kiểm chứng phase ban đầu (cơ chế chờ chung đã được thay thế)
 
 - `pnpm build`: TypeScript shared/server/client và Vite.
 - `pnpm test`: 30 tests, gồm 23 tests trước, 6 tests server match, 1 integration test Socket.IO ba client thật. Kiểm tra host/ready, input, sprint, capture, cắt trail/hồi sinh, freeze, quorum, riêng tư view đáp án, disconnect, kết thúc và lobby lượt mới.

@@ -27,7 +27,6 @@ export function OnlineLobby({initialMode,initialProfile,onExit}:{initialMode:'cr
   const [room,setRoom]=useState<OnlineRoom|null>(null);
   const [snapshot,setSnapshot]=useState<OnlineSnapshot|null>(null);
   const [quiz,setQuiz]=useState<QuizView|null>(null);
-  const [readyIds,setReadyIds]=useState<string[]>([]);
   const [profile,setProfile]=useState(initialProfile);const [code,setCode]=useState('');
   const [editing,setEditing]=useState(false);
   const [error,setError]=useState('');const [busy,setBusy]=useState(false);
@@ -38,11 +37,11 @@ export function OnlineLobby({initialMode,initialProfile,onExit}:{initialMode:'cr
     mounted.current=true;
     const onRoom=(next:OnlineRoom)=>{
       setRoom(next);
-      if(next.status==='lobby'){setSnapshot(null);setQuiz(null);setReadyIds([]);currentMatch.current=null;}
+      if(next.status==='lobby'){setSnapshot(null);setQuiz(null);currentMatch.current=null;}
     };
     const start=(session:{room:OnlineRoom;snapshot:OnlineSnapshot})=>{currentMatch.current=session.snapshot.matchId;setRoom(session.room);setSnapshot(session.snapshot);setQuiz(null);setError('');};
     const update=(next:OnlineSnapshot)=>{if(currentMatch.current===next.matchId)setSnapshot(next);};
-    const learning=(matchId:string,next:QuizView|null,ready:string[])=>{if(matchId===currentMatch.current){setQuiz(next);setReadyIds(ready);}};
+    const learning=(matchId:string,next:QuizView|null)=>{if(matchId===currentMatch.current)setQuiz(next);};
     const disconnect=()=>{setConnected(false);setRoom(null);setSnapshot(null);setQuiz(null);currentMatch.current=null;setBusy(false);setError('Mất kết nối. Bạn đã rời trận; hãy tạo hoặc vào lại phòng.');};
     const connect=()=>setConnected(true);
     socket.on('online:room',onRoom);socket.on('online:started',start);socket.on('online:snapshot',update);
@@ -74,14 +73,14 @@ export function OnlineLobby({initialMode,initialProfile,onExit}:{initialMode:'cr
     const minutes=Math.floor(snapshot.remainingSeconds/60),seconds=Math.floor(snapshot.remainingSeconds%60);
     return <div className="game-viewport">
       <PhaserGame online={{snapshot,playerId:socket.id!}} onExitGame={exit}/>
-      <div className="online-hud"><div><strong>PHÒNG {room.code}</strong><span>{minutes}:{seconds.toString().padStart(2,'0')} · {snapshot.paused?'TRẠM TRI THỨC':'ĐANG CHƠI'}</span></div>
+      <div className="online-hud"><div><strong>PHÒNG {room.code}</strong><span>{minutes}:{seconds.toString().padStart(2,'0')} · {player?.learning?'ĐANG TRẢ LỜI · ĐƯỢC BẢO VỆ':'ĐANG CHƠI'}</span></div>
         <div className="online-actions"><button className="pixel-button secondary" onClick={()=>document.fullscreenElement?document.exitFullscreen().catch(()=>{}):document.documentElement.requestFullscreen().catch(()=>{})}>Toàn màn hình</button><button className="pixel-button secondary" onClick={exit}>Rời trận</button></div>
-        <ol>{[...snapshot.players].sort((a,b)=>b.score-a.score).map(p=><li key={p.id} style={{color:'#'+p.color.toString(16).padStart(6,'0')}}>{p.nickname}{p.id===socket.id?' (Bạn)':''} · {Math.floor(p.score)} đ · {(p.ownedCells/65536*100).toFixed(1)}%</li>)}</ol>
+        <ol>{[...snapshot.players].sort((a,b)=>b.score-a.score).map(p=><li key={p.id} style={{color:'#'+p.color.toString(16).padStart(6,'0')}}>{p.nickname}{p.id===socket.id?' (Bạn)':''} · {Math.floor(p.score)} đ · {(p.ownedCells/65536*100).toFixed(1)}%{p.learning?' · Đang trả lời 🛡':''}</li>)}</ol>
       </div>
       {player && <div className="online-sprint"><strong>NỘ {Math.ceil(player.rage)}/100</strong><progress aria-label="Nộ của bạn" max={100} value={player.rage}/><span>{player.sprinting?'ĐANG TĂNG TỐC':'GIỮ SPACE / CHẠY ĐỂ TĂNG TỐC'}</span></div>}
       <OnlineMiniMap snapshot={snapshot}/>
       {error && <div className="online-error-toast" role="alert">{error}</div>}
-      {quiz && !snapshot.finished && <LearningOverlay quiz={quiz} online readyCount={readyIds.length} waitingForGroup={readyIds.includes(socket.id!)}
+      {quiz && !snapshot.finished && <LearningOverlay quiz={quiz} online remainingSeconds={snapshot.remainingSeconds}
         onAnswer={(round,index)=>socket.emit('online:answer',snapshot.matchId,round,index)}
         onContinue={round=>socket.emit('online:continue',snapshot.matchId,round)} onExit={exit}/>}
       {snapshot.finished && <div className="learning-backdrop"><section className="learning-panel" role="dialog" aria-modal="true" aria-labelledby="result-title"><div className="eyebrow">KẾT THÚC TRẬN</div><h2 id="result-title">{snapshot.players.length<2?'Các đối thủ đã rời trận':'Hết thời gian · Tổng kết thị trường'}</h2>
@@ -103,7 +102,7 @@ export function OnlineLobby({initialMode,initialProfile,onExit}:{initialMode:'cr
       <button className="pixel-button secondary" onClick={()=>{setProfile({nickname:me!.nickname,character:me!.character,color:me!.color});setEditing(true);setError('');}}>ĐỔI NHÂN VẬT / MÀU</button>
       <div className="room-actions"><button className="pixel-button secondary" onClick={()=>socket.emit('online:ready',!me?.ready)}>{me?.ready?'HỦY SẴN SÀNG':'SẴN SÀNG'}</button>
         {host && <button className="pixel-button primary" disabled={room.members.length<2 || !room.members.every(m=>m.ready)} onClick={()=>socket.emit('online:start')}>BẮT ĐẦU</button>}</div>
-      <p className="online-tip">Cả phòng tạm dừng ở trạm câu hỏi. Tất cả cần trả lời và xác nhận đọc xong để tiếp tục. Rời hoặc mất kết nối sẽ loại người chơi khỏi lượt hiện tại.</p>
+      <p className="online-tip">Ai trả lời và đọc giải thích xong được đi tiếp ngay. Người đang làm bài đứng yên và được bảo vệ khỏi bị cắt đuôi; đồng hồ vẫn chạy. Rời hoặc mất kết nối sẽ loại người chơi khỏi lượt hiện tại.</p>
       <HowToPlay/>
     </>}
     {error && <p role="alert" className="online-error">{error}</p>}

@@ -7,6 +7,8 @@ import { TerritoryRenderer } from '../rendering/TerritoryRenderer';
 import { CameraSystem } from '../systems/CameraSystem';
 import { InputSystem } from '../systems/InputSystem';
 import { socket } from '../../networking/socket';
+import { RegionManager } from '../entities/RegionManager';
+import { DiscoveryPopup } from '../ui/DiscoveryPopup';
 
 /** Online scene displays server snapshots only; it never awards land or scores. */
 export class OnlineScene extends Phaser.Scene {
@@ -21,6 +23,8 @@ export class OnlineScene extends Phaser.Scene {
   private sendTimer=0;
   private revision=-1;
   private ready=false;
+  private regions=new RegionManager();
+  private discovery!:DiscoveryPopup;
   constructor(private snapshot:OnlineSnapshot,private playerId:string){super({key:'OnlineScene'});}
 
   preload():void {
@@ -32,6 +36,7 @@ export class OnlineScene extends Phaser.Scene {
     this.territory=new TerritoryRenderer(this,this.grid,this.trails);
     this.cameraSystem=new CameraSystem(this);
     this.controls=new InputSystem(this);
+    this.discovery=new DiscoveryPopup(this,260);
     this.ready=true;this.applySnapshot(this.snapshot);
     const local=this.renderers.get(this.playerId);
     if(local)this.cameraSystem.followTarget(local.getContainer());
@@ -41,10 +46,11 @@ export class OnlineScene extends Phaser.Scene {
       this.scale.off('resize',this.resize,this);
       this.game.events.off(Phaser.Core.Events.BLUR,this.stopInput,this);
       this.controls.destroy();this.cameraSystem.destroy();this.city.destroy();this.territory.destroy();
+      this.discovery.destroy();
       this.renderers.forEach(renderer=>renderer.destroy());this.renderers.clear();
     });
   }
-  private resize(size:Phaser.Structs.Size):void {this.cameraSystem.onResize(size.width,size.height);}
+  private resize(size:Phaser.Structs.Size):void {this.cameraSystem.onResize(size.width,size.height);this.discovery.onResize(size.width,size.height);}
   private stopInput():void {
     this.game.events.emit('controls:reset');
     this.input.keyboard?.resetKeys();
@@ -52,9 +58,10 @@ export class OnlineScene extends Phaser.Scene {
   }
   public applySnapshot(snapshot:OnlineSnapshot):void {
     const wasPaused=this.snapshot.paused;
+    const wasLearning=this.snapshot.players.find(player=>player.id===this.playerId)?.learning;
     if(!this.ready && !snapshot.territory && this.snapshot.territory) snapshot={...snapshot,territory:this.snapshot.territory};
     this.snapshot=snapshot;if(!this.ready)return;
-    if(snapshot.paused!==wasPaused || snapshot.finished)this.stopInput();
+    if(snapshot.paused!==wasPaused || snapshot.players.find(player=>player.id===this.playerId)?.learning!==wasLearning || snapshot.finished)this.stopInput();
     const ids=new Set(snapshot.players.map(player=>player.id));
     for(const [id,renderer]of this.renderers)if(!ids.has(id)){renderer.destroy();this.renderers.delete(id);this.trails.clearTrail(id);}
     snapshot.players.forEach((player)=>{
@@ -81,7 +88,7 @@ export class OnlineScene extends Phaser.Scene {
     this.sendTimer+=delta;
     if(this.sendTimer>=50){
       this.sendTimer=0;const input=this.controls.getMovementInput();
-      if(!this.snapshot.paused && !this.snapshot.finished)socket.volatile.emit('online:input',this.snapshot.matchId,
+      if(!this.snapshot.paused && !this.snapshot.finished && !this.snapshot.players.find(player=>player.id===this.playerId)?.learning)socket.volatile.emit('online:input',this.snapshot.matchId,
         {sequence:++this.sequence,dx:input.dx,dy:input.dy,sprint:input.sprint});
     }
     for(const player of this.snapshot.players){
@@ -91,10 +98,15 @@ export class OnlineScene extends Phaser.Scene {
       const snap=Math.hypot(player.x-position.x,player.y-position.y)>128;
       const x=snap?player.x:Phaser.Math.Linear(position.x,player.x,alpha);
       const y=snap?player.y:Phaser.Math.Linear(position.y,player.y,alpha);
-      const frozen=this.snapshot.paused || this.snapshot.finished;
-      renderer.update(x,y,frozen?0:player.vx,frozen?0:player.vy,player.shield>0);
+      const frozen=this.snapshot.paused || this.snapshot.finished || player.learning;
+      renderer.update(x,y,frozen?0:player.vx,frozen?0:player.vy,player.shield>0 || player.learning);
       const sprint=new SprintAbility();sprint.rage=player.rage;sprint.isSprinting=player.sprinting && !frozen;sprint.exhausted=player.exhausted;
       renderer.updateSprint(sprint);
+      if(player.id===this.playerId && !this.snapshot.finished){
+        const transition=this.regions.updatePlayerPosition(player.x,player.y);
+        // This popup describes a district; discovery does not award server points.
+        if(transition)this.discovery.show({...transition,bonusAwarded:0});
+      }
     }
     this.territory.update(delta/1000);
   }

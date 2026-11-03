@@ -14,13 +14,13 @@ Chủ đề thuộc **Kinh tế chính trị Mác–Lênin**: lợi nhuận, l�
 | 05:30 | Cạnh tranh: đất đai và địa tô |
 | 07:00 | Về đích: kết nối các hình thức |
 
-Mỗi chặng chọn một câu ngẫu nhiên đúng chủ đề; không lặp câu trong trận. Có tối đa một trạm cứu nguy bổ sung sau khi bị cắt đuôi từ giây 30 trở đi, cách trạm trước ít nhất 90 giây chơi. Mốc định kỳ được ưu tiên.
+Mỗi chặng chọn một câu ngẫu nhiên đúng chủ đề, giống nhau cho cả phòng; không lặp câu trong trận. Mỗi người có tối đa một trạm cứu nguy riêng sau khi bị cắt đuôi từ giây 30 trở đi, cách lần phát câu hỏi trước ít nhất 90 giây. Mốc định kỳ được ưu tiên. Câu mới xếp hàng nếu người đó chưa đọc xong câu trước, không ghi đè câu đang trả lời.
 
 ## Quy tắc
 
-- Trạm mở: tạm dừng mô phỏng. Không trừ thời gian đọc vào trận; không giới hạn thời gian trả lời.
-- Mỗi người chọn một lần; khóa lựa chọn rồi hiện đáp án đúng và giải thích. Sai vẫn được tiếp tục sau phần giải thích. Đúng được hồi tối đa 20 nộ khi round kết thúc, không thưởng tiền.
-- Local: người chơi trả lời, bot tạm dừng. Online: tất cả người thật trong phòng cùng dừng, tất cả phải gửi đáp án và xác nhận đọc xong để server tiếp tục. Người rời/mất kết nối được loại khỏi nhóm chờ. Chi tiết xem [MULTIPLAYER.md](MULTIPLAYER.md).
+- Trạm mở: chỉ người đang trả lời đứng yên, giữ nguyên nộ và được bảo vệ khỏi bị cắt đuôi. Người đó cũng không thể cắt đuôi người khác. Bot/đối thủ, điểm kinh tế và đồng hồ trận vẫn chạy; đất vẫn có thể bị đối thủ chiếm.
+- Mỗi người chọn một lần; khóa lựa chọn rồi hiện đáp án đúng và giải thích. Sai vẫn được tiếp tục sau phần giải thích. Đúng hồi tối đa 20 nộ khi người đó bấm tiếp tục, không thưởng tiền; gửi lại xác nhận không cộng thưởng lần nữa.
+- Ai trả lời và đọc giải thích xong được đi tiếp ngay, không chờ cả phòng. Áp dụng cả local (bot tiếp tục chơi) và online. Hết 8 phút trận vẫn kết thúc kể cả còn người chưa trả lời. Chi tiết xem [MULTIPLAYER.md](MULTIPLAYER.md).
 - Có thể kết thúc lượt và về trang chủ, không có nút bỏ qua câu hỏi để tiếp tục trận.
 - Cơ chế điểm cửa hàng, thu phí ô đất và lãi trong game là giản lược gameplay; không thay thế các khái niệm và quan hệ trong giáo trình.
 

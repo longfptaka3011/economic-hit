@@ -71,6 +71,11 @@ export class Player {
     this.renderer.updateSprint(this.sprint);
   }
 
+  public holdForLearning():void {
+    this.state.vx=0;this.state.vy=0;this.state.isMoving=false;this.sprint.isSprinting=false;
+    this.renderer.updateFromPlayerState(this.state,true);this.renderer.updateSprint(this.sprint);
+  }
+
   public get x(): number {
     return this.state.x;
   }

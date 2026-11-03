@@ -136,6 +136,7 @@ kbd { border: 1px solid #637c68; border-bottom-width: 3px; padding: 2px 4px; col
 .learning-topline { display: flex; justify-content: space-between; gap: 12px; color: #e8cf8b; font: 10px monospace; letter-spacing: 1px; }
 .learning-panel h2 { margin: 16px 0 8px; font-size: 25px; font-weight: 700; line-height: 1.3; }
 .learning-pause-note { color: #94b5a4; font-size: 12px; line-height: 1.6; margin: 0 0 22px; }
+.learning-clock { color:#f4d985; font:bold 13px monospace; margin:0 0 18px; }
 .learning-prompt { font-size: 18px; line-height: 1.55; font-weight: 600; margin: 0 0 18px; }
 .learning-options { display: grid; gap: 10px; }
 .learning-option { width: 100%; display: flex; gap: 12px; align-items: center; text-align: left; border: 2px solid #526d5c; background: #263e33; padding: 12px; font-size: 14px; line-height: 1.5; color: #e0e8d3; cursor: pointer; }

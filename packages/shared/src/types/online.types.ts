@@ -10,6 +10,7 @@ export interface OnlineInput { sequence: number; dx: number; dy: number; sprint:
 export interface OnlinePlayer extends OnlineMember {
   x: number; y: number; vx: number; vy: number; rage: number; sprinting: boolean; exhausted: boolean;
   shield: number; score: number; ownedCells: number;
+  learning: boolean;
 }
 export interface OnlineSnapshot {
   matchId: string; tick: number; remainingSeconds: number; paused: boolean; finished: boolean;

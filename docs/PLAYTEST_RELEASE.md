@@ -8,7 +8,7 @@ URL: https://market-mayhem-hfuo.onrender.com
 - Tên bắt buộc, 6 nhân vật, 8 màu; không trùng màu trong phòng. Thay ngoại hình ở lobby rồi sẵn sàng lại.
 - Trận 8 phút, di chuyển, chiếm đất, cắt đuôi, hồi sinh, điểm kinh tế, bản đồ nhỏ và bảng kết quả. Chủ phòng đưa cả nhóm về lobby để chơi lượt mới.
 - Nộ độc lập; giữ Space hoặc nút CHẠY để tăng tốc. Điều khiển cảm ứng giữ nhiều ngón cho hướng chéo và chạy nhanh.
-- Năm chặng câu hỏi chung. Khóa chuyển động trong lúc học; mỗi người trả lời và xác nhận đọc xong trước khi cả nhóm tiếp tục.
+- Năm chặng câu hỏi giống nhau cho cả phòng nhưng mở khóa độc lập. Người đang học đứng yên, không bị cắt đuôi và cũng không cắt được đuôi đối thủ. Ai trả lời và đọc giải thích xong được đi tiếp ngay; bot, đồng hồ và kinh tế vẫn chạy. Popup vùng đất có cả local và online, tự ẩn và không khóa di chuyển.
 - Hướng dẫn chiếm đất, tính điểm và quy tắc câu hỏi ở trang chủ/lobby. Phân biệt mô phỏng trong game với kiến thức giáo trình.
 - Phaser tải khi bắt đầu trận, không nằm trong mã trang chủ ban đầu. Nút cảm ứng được nhả khi mất focus, hủy pointer, pause, kết thúc hoặc vào trạm câu hỏi.
 - GitHub Actions build/test và build Docker, sau đó kiểm tra container trả health, HTML, JavaScript và ảnh tileset. Xem kết quả từng lần chạy trong tab Actions của repository.
@@ -18,8 +18,8 @@ URL: https://market-mayhem-hfuo.onrender.com
 1. Mở URL công khai, đợi máy chủ kết nối. Tạo phòng, gửi mã 6 chữ số cho máy khác.
 2. Chọn màu khác nhau, cùng sẵn sàng; chủ phòng bắt đầu. Kiểm tra mỗi máy thấy đúng tên, ngoại hình và chuyển động của nhau.
 3. Trên điện thoại giữ một hướng và CHẠY; nhả tay để dừng. Thử chuyển ứng dụng rồi quay lại, bảo đảm không còn tự chạy.
-4. Đến phút 1: cả phòng dừng. Một người trả lời trước chưa mở khóa; chỉ khi cả nhóm trả lời và xác nhận đọc xong mới tiếp tục.
-5. Hết trận xem thứ hạng và về lobby. Người rời phòng không còn giữ nhóm chờ ở câu hỏi.
+4. Đến phút 1: cùng nhận câu hỏi, đồng hồ vẫn giảm. Một người trả lời rồi bấm tiếp tục, kiểm tra người đó đi được trong khi người kia vẫn đứng yên được bảo vệ và chưa nhận đáp án.
+5. Hết trận xem thứ hạng và về lobby, kể cả còn người chưa trả lời. Thử đi sang vùng khác: popup giới thiệu vùng hiện rồi tự ẩn, không chặn di chuyển.
 
 ## Giới hạn vận hành
 

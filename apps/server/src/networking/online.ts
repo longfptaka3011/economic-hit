@@ -16,7 +16,7 @@ export function setupOnline(io: GameServer, createMatch: (members:OnlineMember[]
   const publishQuiz = (room:Room) => {
     const match=room.match;if(!match)return;
     for (const member of room.info.members) io.to(member.id).emit('online:quiz',match.id,
-      match.finished ? null : match.quiz.viewFor(member.id),[...match.readyIds]);
+      match.finished ? null : match.quiz.viewFor(member.id),[]);
     room.lastQuizVersion=match.quizVersion;
   };
   const publishSnapshot = (room:Room,full=false) => {

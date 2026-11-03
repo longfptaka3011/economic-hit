@@ -8,7 +8,7 @@ import { CameraSystem } from '../systems/CameraSystem';
 import { Player } from '../entities/Player';
 import { BotPlayer } from '../entities/BotPlayer';
 import { PauseOverlay } from '../ui/PauseOverlay';
-import { TerritoryGrid, TrailManager, TerritoryCaptureSystem, GAME_CONSTANTS, QuizDirector, SPRINT_CONFIG, type AvatarProfile } from '@market-mayhem/shared';
+import { TerritoryGrid, TrailManager, TerritoryCaptureSystem, GAME_CONSTANTS, RaceQuizDirector, SPRINT_CONFIG, type AvatarProfile } from '@market-mayhem/shared';
 import { TerritoryRenderer } from '../rendering/TerritoryRenderer';
 import { ParticleEffects } from '../effects/ParticleEffects';
 import { NotificationManager } from '../ui/NotificationManager';
@@ -42,7 +42,7 @@ export class MainScene extends Phaser.Scene {
   private cameraSystem!: CameraSystem;
   private pauseOverlay!: PauseOverlay;
 
-  private quizDirector!: QuizDirector;
+  private quizDirector!: RaceQuizDirector;
   private sprintHUD!: SprintHUD;
   private regionManager!: RegionManager;
   private discoveryPopup!: DiscoveryPopup;
@@ -62,6 +62,7 @@ export class MainScene extends Phaser.Scene {
   // Toll cooldown timer
   private tollCooldown: number = 0;
   private matchEnded=false;
+  private lastClockSecond=-1;
 
   constructor(private avatar:AvatarProfile={nickname:'Nhà Tư Bản Trẻ',character:0,color:0x38bdf8}) {
     super({ key: 'MainScene' });
@@ -76,7 +77,8 @@ export class MainScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN,this.shutdown,this);
     this.matchRemainingSec=GAME_CONSTANTS.MATCH_DURATION_SECONDS;
     this.matchEnded=false;
-    this.quizDirector=new QuizDirector(['local_player']);
+    this.lastClockSecond=-1;
+    this.quizDirector=new RaceQuizDirector(['local_player']);
     this.game.events.on('learning:answer',this.submitLearningAnswer,this);
     this.game.events.on('learning:continue',this.continueAfterLearning,this);
     PlayerRenderer.registerAnimations(this,0);PlayerRenderer.registerAnimations(this,1);
@@ -156,7 +158,7 @@ export class MainScene extends Phaser.Scene {
     this.arcadeHUD = new ArcadeHUD(
       this,
       () => this.toggleFullscreen(),
-      () => { if(!this.quizDirector.active) this.pauseOverlay.toggle(); }
+      () => { if(!this.quizDirector.isLearning(this.player.id)) this.pauseOverlay.toggle(); }
     );
 
     // 12. Pause Overlay
@@ -169,7 +171,7 @@ export class MainScene extends Phaser.Scene {
     // 12. Input System
     // 13. Input System
     this.inputSystem = new InputSystem(this, () => {
-      if(!this.quizDirector.active) this.pauseOverlay.toggle();
+      if(!this.quizDirector.isLearning(this.player.id)) this.pauseOverlay.toggle();
     });
 
     this.sprintHUD=new SprintHUD(this);
@@ -200,17 +202,19 @@ export class MainScene extends Phaser.Scene {
   }
   private updateStep(delta:number):void {
     const deltaSec = delta / 1000;
-    if(this.pauseOverlay.isOpen || this.quizDirector.active || this.matchEnded)return;
+    if(this.pauseOverlay.isOpen || this.matchEnded)return;
     if(this.quizDirector.update(deltaSec)){
-      this.input.keyboard?.resetKeys();this.tweens.pauseAll();this.anims.pauseAll();this.time.paused=true;
-      this.publishLearningState();return;
+      this.game.events.emit('controls:reset');this.publishLearningState();
     }
 
     // 1. Update FPS Counter
-      // Countdown excludes quiz and manual pause time.
+      // Questions cost real match time; only manual local pause stops the clock.
     this.matchRemainingSec = Math.max(0, this.matchRemainingSec - deltaSec);
+    const clockSecond=Math.floor(this.matchRemainingSec);
+    if(clockSecond!==this.lastClockSecond){this.lastClockSecond=clockSecond;this.game.events.emit('match:time',clockSecond);}
     if(this.matchRemainingSec===0){
       this.matchEnded=true;this.input.keyboard?.resetKeys();this.tweens.pauseAll();this.anims.pauseAll();this.time.paused=true;
+      this.game.events.emit('learning:state',null);
       const rankings=[{id:this.player.id,nickname:this.avatar.nickname},{id:this.bot.id,nickname:'Tư Bản Robot'}].map(player=>({
         nickname:player.nickname,score:this.economicSystem.getProfile(player.id).totalProfit,ownedCells:this.territoryGrid.getOwnerCellsCount(player.id)
       })).sort((a,b)=>b.score-a.score);
@@ -221,10 +225,11 @@ export class MainScene extends Phaser.Scene {
     const fps = Math.round(this.game.loop.actualFps);
     // 2. Read Player Input & Update Physics
     // 3. Read Player Input & Update Physics
-    const input = this.inputSystem.getMovementInput();
-    this.player.update(input, deltaSec);
+    const learning=this.quizDirector.isLearning(this.player.id);
+    if(learning)this.player.holdForLearning();
+    else this.player.update(this.inputSystem.getMovementInput(), deltaSec);
     const transition=this.regionManager.updatePlayerPosition(this.player.x,this.player.y);
-    if(transition)this.discoveryPopup.show(transition);
+    if(transition)this.discoveryPopup.show({...transition,bonusAwarded:0});
     this.sprintHUD.update(this.player.sprint);
 
     // 3. Player Grid Position & Trail Logic
@@ -233,10 +238,10 @@ export class MainScene extends Phaser.Scene {
     const pRow = Math.floor(this.player.y / MAP_CONFIG.tileSize);
     const isPlayerOnOwnTerritory = this.territoryGrid.getOwner(pCol, pRow) === this.player.id;
 
-    if (!isPlayerOnOwnTerritory) {
+    if (!learning && !isPlayerOnOwnTerritory) {
       // Outside owned territory: add point to exposed trail
       this.trailManager.addPoint(this.player.id, pCol, pRow);
-    } else {
+    } else if(!learning) {
       // Back inside owned territory: complete trail if one exists!
       if (this.trailManager.hasTrail(this.player.id)) {
         const trail = this.trailManager.getTrail(this.player.id);
@@ -266,7 +271,7 @@ export class MainScene extends Phaser.Scene {
 
     // 4. Update Bot Player
     // 5. Update Bot Player AI
-    this.bot.update(deltaSec, this.trailManager.getTrail(this.player.id), (botResult) => {
+    this.bot.update(deltaSec, learning?[]:this.trailManager.getTrail(this.player.id), (botResult) => {
       if (botResult && botResult.totalCapturedCount > 0) {
         this.territoryRenderer.triggerCaptureFlash(
           [...botResult.trailCells, ...botResult.enclosedCells],
@@ -328,6 +333,7 @@ export class MainScene extends Phaser.Scene {
   }
 
   private checkTrailCollisions(pCol: number, pRow: number): void {
+    if(this.quizDirector.isLearning(this.player.id))return;
     // Check if Bot crossed Player's exposed trail
     if (this.player.shieldTimeRemaining <= 0) {
       const botHitPlayer = this.trailManager.checkCollision(this.bot.id, this.bot.col, this.bot.row);
@@ -336,7 +342,7 @@ export class MainScene extends Phaser.Scene {
         this.particleEffects.emitEliminationParticles(this.player.x, this.player.y, 0x0ea5e9);
         this.notificationManager.showAlert('⚠️ BOT ĐÃ CẮT VỆT ĐUÔI! BẠN BỊ HẠ GỤC VÀ ĐANG HỒI SINH...', true);
         this.respawnPlayer();
-        this.quizDirector.requestCrisis('profit');
+        this.quizDirector.requestCrisis(this.player.id,'profit');
         return;
       }
     }
@@ -387,7 +393,7 @@ export class MainScene extends Phaser.Scene {
         tiles: playerTiles,
         percentage: playerPct,
         profit: profile.totalProfit,
-        hasShield: this.player.shieldTimeRemaining > 0,
+        hasShield: this.player.shieldTimeRemaining > 0 || this.quizDirector.isLearning(this.player.id),
       },
       {
         name: 'Bot',
@@ -419,9 +425,10 @@ export class MainScene extends Phaser.Scene {
   private publishLearningState():void {this.game.events.emit('learning:state',this.quizDirector.viewFor(this.player.id));}
   private submitLearningAnswer(round:string,index:number):void {if(this.quizDirector.submit(round,this.player.id,index))this.publishLearningState();}
   private continueAfterLearning(round:string):void {
-    const answers=this.quizDirector.finish(round);if(!answers)return;
-    if(answers.get(this.player.id)?.correct)this.player.sprint.rage=Math.min(SPRINT_CONFIG.maxRage,this.player.sprint.rage+20);
-    this.input.keyboard?.resetKeys();this.time.paused=false;this.tweens.resumeAll();this.anims.resumeAll();
+    if(this.matchEnded)return;
+    const answer=this.quizDirector.finish(round,this.player.id);if(!answer)return;
+    if(answer.correct)this.player.sprint.rage=Math.min(SPRINT_CONFIG.maxRage,this.player.sprint.rage+20);
+    this.game.events.emit('controls:reset');
     this.sprintHUD.update(this.player.sprint);this.publishLearningState();
   }
   shutdown(): void {

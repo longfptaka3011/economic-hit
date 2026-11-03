@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { QuizDirector, SprintAbility, TerritoryGrid, TrailManager, TerritoryCaptureSystem, GAME_CONSTANTS,
+import { RaceQuizDirector, SprintAbility, TerritoryGrid, TrailManager, TerritoryCaptureSystem, GAME_CONSTANTS,
   type OnlineMember, type OnlineInput, type OnlineSnapshot, type OnlinePlayer } from '@market-mayhem/shared';
 
 const SPAWNS = [{col:64,row:64},{col:190,row:64},{col:64,row:190},{col:190,row:190}];
@@ -15,9 +15,8 @@ export class OnlineMatch {
   readonly id = randomUUID();
   readonly grid = new TerritoryGrid(256, 256);
   readonly trails = new TrailManager();
-  readonly quiz: QuizDirector;
+  readonly quiz: RaceQuizDirector;
   readonly actors = new Map<string, Actor>();
-  readonly readyIds = new Set<string>();
   remainingSeconds: number = GAME_CONSTANTS.MATCH_DURATION_SECONDS;
   tick = 0;
   revision = 0;
@@ -26,7 +25,7 @@ export class OnlineMatch {
 
   constructor(members: OnlineMember[], private duration: number = GAME_CONSTANTS.MATCH_DURATION_SECONDS) {
     this.remainingSeconds = duration;
-    this.quiz = new QuizDirector(members.map(member => member.id));
+    this.quiz = new RaceQuizDirector(members.map(member => member.id));
     members.forEach((member, i) => {
       const spawn = SPAWNS[i];
       this.actors.set(member.id, { member, spawn, x: spawn.col*16+8, y: spawn.row*16+8, vx:0, vy:0,
@@ -37,7 +36,7 @@ export class OnlineMatch {
 
   input(playerId: string, input: OnlineInput): boolean {
     const actor = this.actors.get(playerId);
-    if (!actor || this.finished || this.quiz.active || !input || !Number.isSafeInteger(input.sequence) || input.sequence <= actor.sequence) return false;
+    if (!actor || this.finished || this.quiz.isLearning(playerId) || !input || !Number.isSafeInteger(input.sequence) || input.sequence <= actor.sequence) return false;
     if (!Number.isFinite(input.dx) || !Number.isFinite(input.dy) || typeof input.sprint !== 'boolean') return false;
     const length = Math.hypot(input.dx, input.dy);
     const divisor = Math.max(1, length);
@@ -52,32 +51,19 @@ export class OnlineMatch {
   }
 
   answer(playerId: string, roundId: string, option: number): boolean {
+    if(this.finished)return false;
     if (!this.quiz.submit(roundId, playerId, option)) return false;
     this.quizVersion++;
     return true;
   }
 
   continue(playerId: string, roundId: string): boolean {
-    if (!this.actors.has(playerId) || this.quiz.active?.id !== roundId || !this.quiz.canContinue) return false;
-    if (this.readyIds.has(playerId)) return false;
-    this.readyIds.add(playerId);
+    const actor=this.actors.get(playerId);if(!actor || this.finished)return false;
+    const answer=this.quiz.finish(roundId,playerId);if(!answer)return false;
+    if(answer.correct)actor.sprint.rage=Math.min(100,actor.sprint.rage+20);
+    actor.input=STOP;actor.vx=0;actor.vy=0;actor.inputAge=0;
     this.quizVersion++;
-    this.tryResume();
     return true;
-  }
-
-  private tryResume(): void {
-    const round = this.quiz.active;
-    if (!round || !this.quiz.canContinue || this.readyIds.size !== this.actors.size) return;
-    const answers = this.quiz.finish(round.id);
-    if (!answers) return;
-    for (const [id, answer] of answers) {
-      const actor = this.actors.get(id);
-      if (actor && answer.correct) actor.sprint.rage = Math.min(100, actor.sprint.rage + 20);
-    }
-    this.readyIds.clear();
-    this.clearInputs();
-    this.quizVersion++;
   }
 
   remove(playerId: string): void {
@@ -86,10 +72,8 @@ export class OnlineMatch {
     this.grid.clearOwner(playerId);
     this.revision++;
     this.quiz.removeParticipant(playerId);
-    this.readyIds.delete(playerId);
     this.quizVersion++;
     if (this.actors.size < 2) { this.finished = true; this.clearInputs(); }
-    else this.tryResume();
   }
 
   private respawn(id: string, actor: Actor): void {
@@ -99,16 +83,19 @@ export class OnlineMatch {
     actor.x = actor.spawn.col*16+8; actor.y = actor.spawn.row*16+8;
     actor.vx = 0; actor.vy = 0; actor.input = STOP; actor.sprint.reset(); actor.shield = 3.5;
     this.revision++;
-    this.quiz.requestCrisis('profit');
+    this.quiz.requestCrisis(id,'profit');
   }
 
   step(dt = 1/60): void {
-    if (this.finished || this.quiz.active) return;
-    if (this.quiz.update(dt)) { this.clearInputs(); this.readyIds.clear(); this.quizVersion++; return; }
+    if (this.finished) return;
+    if (this.quiz.update(dt))this.quizVersion++;
     this.tick++;
     this.remainingSeconds = Math.max(0, this.remainingSeconds - dt);
     if (!this.remainingSeconds) { this.finished = true; this.clearInputs(); return; }
     for (const actor of this.actors.values()) {
+      if(this.quiz.isLearning(actor.member.id)){
+        actor.input=STOP;actor.vx=0;actor.vy=0;actor.sprint.isSprinting=false;continue;
+      }
       actor.shield = Math.max(0, actor.shield - dt);
       actor.inputAge += dt;
       if (actor.inputAge > .5) actor.input = STOP;
@@ -124,12 +111,13 @@ export class OnlineMatch {
     // Determine simultaneous cuts before captures can remove a vulnerable trail.
     const victims = new Set<string>();
     for (const [id,actor] of this.actors) {
+      if(this.quiz.isLearning(id))continue;
       const hit = this.trails.checkCollision(id,Math.floor(actor.x/16),Math.floor(actor.y/16));
-      if (hit && this.actors.get(hit.hitPlayerId)!.shield <= 0) victims.add(hit.hitPlayerId);
+      if (hit && !this.quiz.isLearning(hit.hitPlayerId) && this.actors.get(hit.hitPlayerId)!.shield <= 0) victims.add(hit.hitPlayerId);
     }
     for (const id of victims) this.respawn(id,this.actors.get(id)!);
     for (const [id,actor] of this.actors) {
-      if (victims.has(id)) continue;
+      if (victims.has(id) || this.quiz.isLearning(id)) continue;
       const col=Math.floor(actor.x/16), row=Math.floor(actor.y/16);
       if (this.grid.getOwner(col,row) !== id) this.trails.addPoint(id,col,row);
       else if (this.trails.hasTrail(id)) {
@@ -170,11 +158,11 @@ export class OnlineMatch {
 
   snapshot(includeTerritory = false): OnlineSnapshot {
     const players: OnlinePlayer[] = [...this.actors.values()].map(a=>({...a.member,x:a.x,y:a.y,vx:a.vx,vy:a.vy,
-      rage:a.sprint.rage,sprinting:a.sprint.isSprinting,exhausted:a.sprint.exhausted,shield:a.shield,score:a.score,
+      rage:a.sprint.rage,sprinting:a.sprint.isSprinting,exhausted:a.sprint.exhausted,shield:a.shield,score:a.score,learning:!this.finished && this.quiz.isLearning(a.member.id),
       ownedCells:this.grid.getOwnerCellsCount(a.member.id)}));
     const territory: NonNullable<OnlineSnapshot['territory']>=[];
     if(includeTerritory)for(const id of this.actors.keys())for(const cell of this.grid.getAllOwnedCells(id))territory.push({...cell,owner:id});
-    return {matchId:this.id,tick:this.tick,remainingSeconds:this.remainingSeconds,paused:!!this.quiz.active && !this.finished,
+    return {matchId:this.id,tick:this.tick,remainingSeconds:this.remainingSeconds,paused:false,
       finished:this.finished,players,trails:Object.fromEntries([...this.actors.keys()].map(id=>[id,this.trails.getTrail(id)])),
       territoryRevision:this.revision,...(includeTerritory?{territory}:{})};
   }

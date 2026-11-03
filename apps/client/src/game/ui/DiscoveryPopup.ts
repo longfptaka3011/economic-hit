@@ -26,7 +26,7 @@ export class DiscoveryPopup {
   private readonly cardW: number = 440;
   private readonly cardH: number = 96;
 
-  constructor(scene: Phaser.Scene) {
+  constructor(scene: Phaser.Scene,private minimumY=0) {
     this.scene = scene;
     this.create();
   }
@@ -189,7 +189,7 @@ export class DiscoveryPopup {
     // Slide-down animation with retro stepped bounce
     this.activeTween = this.scene.tweens.add({
       targets: this.container,
-      y: screenW < 960 ? 200 : 150,
+      y: Math.max(this.minimumY,screenW < 960 ? 200 : 150),
       alpha: 1,
       scale: cardScale,
       duration: 480,
@@ -230,7 +230,7 @@ export class DiscoveryPopup {
       this.container.setScale(Math.min(1, (width - 24) / this.cardW));
       if (this.isVisible) {
         this.activeTween?.stop();
-        this.container.setY(width < 960 ? 200 : 150);
+        this.container.setY(Math.max(this.minimumY,width < 960 ? 200 : 150));
         this.container.setAlpha(1);
         this.autoHideTimer?.remove();
         this.autoHideTimer = this.scene.time.delayedCall(3500, () => this.hide());

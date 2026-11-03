@@ -12,7 +12,7 @@ const delay=(ms:number)=>new Promise(resolve=>setTimeout(resolve,ms));
 async function until(predicate:()=>boolean){for(let i=0;i<100;i++){if(predicate())return;await delay(10);}throw new Error('Socket event timeout');}
 
 describe('Online room Socket.IO transport',()=>{
-  it('shares checkpoints, waits for the group and removes disconnected participants',async()=>{
+  it('shares checkpoints while allowing each player to resume independently over real sockets',async()=>{
     const http=createServer();const io=new Server(http);let match:OnlineMatch|undefined;
     const cleanup=setupOnline(io,members=>{match=new OnlineMatch(members);return match;});
     await new Promise<void>(resolve=>http.listen(0,'127.0.0.1',resolve));
@@ -24,6 +24,7 @@ describe('Online room Socket.IO transport',()=>{
       clients.push(client);const state:any={};states.set(client,state);
       client.on('online:room',(room:unknown)=>state.room=room);
       client.on('online:started',(session:unknown)=>state.session=session);
+      client.on('online:snapshot',(snapshot:unknown)=>state.snapshot=snapshot);
       client.on('online:quiz',(_id:string,quiz:unknown)=>state.quiz=quiz);
       await new Promise<void>(resolve=>client.on('connect',resolve));return client;
     };
@@ -54,16 +55,19 @@ describe('Online room Socket.IO transport',()=>{
       await until(()=>!!states.get(a).quiz);
       const round=states.get(a).quiz.roundId;
       expect(states.get(b).quiz.roundId).toBe(round);
-      const frozen=JSON.stringify(running.snapshot(true));await delay(50);
-      expect(JSON.stringify(running.snapshot(true))).toBe(frozen);
+      const time=running.remainingSeconds;await delay(50);
+      expect(running.remainingSeconds).toBeLessThan(time);
       a.emit('online:answer',running.id,round,0);await until(()=>!!states.get(a).quiz.answer);
       expect(states.get(b).quiz.answer).toBeNull();
-      expect(states.get(a).quiz.canContinue).toBe(false);
+      expect(states.get(a).quiz.canContinue).toBe(true);
+      a.emit('online:continue',running.id,round);await until(()=>states.get(a).quiz===null);
+      expect(states.get(b).quiz.answer).toBeNull();expect(running.quiz.isLearning(b.id)).toBe(true);
+      expect(running.input(a.id,{sequence:100,dx:1,dy:0,sprint:true})).toBe(true);
+      expect(running.input(b.id,{sequence:100,dx:1,dy:0,sprint:true})).toBe(false);
+      c.disconnect();await until(()=>states.get(b).quiz.participantCount===2);
       b.emit('online:answer',running.id,round,1);await until(()=>!!states.get(b).quiz.answer);
-      c.disconnect();await until(()=>states.get(a).quiz.participantCount===2);
-      a.emit('online:continue',running.id,round);await delay(30);expect(running.quiz.active).not.toBeNull();
-      b.emit('online:continue',running.id,round);await until(()=>states.get(a).quiz===null);
-      expect(running.quiz.active).toBeNull();
+      b.emit('online:continue',running.id,round);await until(()=>states.get(b).quiz===null);
+      expect(running.quiz.isLearning(a.id)).toBe(false);expect(running.quiz.isLearning(b.id)).toBe(false);
       a.emit('online:leave');await until(()=>states.get(b).room.status==='finished');
       expect(states.get(b).room.hostId).toBe(b.id);
       b.emit('online:lobby');await until(()=>states.get(b).room.status==='lobby');
