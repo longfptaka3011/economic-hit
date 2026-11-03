@@ -4,15 +4,15 @@ Nguồn đối chiếu: **Giao-Trinh-Kinh-Te-Chinh-Tri-Mac-Lenin-.pdf** do ngư�
 
 Chủ đề thuộc **Kinh tế chính trị Mác–Lênin**: lợi nhuận, lợi nhuận thương nghiệp, lợi tức, địa tô; lợi nhuận bình quân và giá cả sản xuất để kết nối các hình thái.
 
-## Nhịp học trong trận 12 phút
+## Nhịp học trong trận 8 phút
 
 | Thời gian chơi | Chặng |
 |---|---|
 | 01:00 | Khởi nghiệp: hiểu lợi nhuận |
-| 03:00 | Mở rộng: lưu thông hàng hóa |
-| 06:00 | Tăng trưởng: vốn và lợi tức |
-| 09:00 | Cạnh tranh: đất đai và địa tô |
-| 11:00 | Về đích: kết nối các hình thức |
+| 02:30 | Mở rộng: lưu thông hàng hóa |
+| 04:00 | Tăng trưởng: vốn và lợi tức |
+| 05:30 | Cạnh tranh: đất đai và địa tô |
+| 07:00 | Về đích: kết nối các hình thức |
 
 Mỗi chặng chọn một câu ngẫu nhiên đúng chủ đề; không lặp câu trong trận. Có tối đa một trạm cứu nguy bổ sung sau khi bị cắt đuôi từ giây 30 trở đi, cách trạm trước ít nhất 90 giây chơi. Mốc định kỳ được ưu tiên.
 

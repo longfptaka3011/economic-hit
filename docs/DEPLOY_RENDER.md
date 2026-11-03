@@ -1,5 +1,7 @@
 # Bản chơi thử Render
 
+[Triển khai repository economic-hit lên Render](https://render.com/deploy?repo=https://github.com/longfptaka3011/economic-hit). Đường dẫn này mở bước tạo dịch vụ từ `render.yaml`; cần đăng nhập Render và xác nhận triển khai. Link game công khai sẽ xuất hiện sau khi dịch vụ build và khởi động thành công.
+
 ## Những thay đổi trong bản này
 
 - Trận local và online đều 8 phút (480 giây chơi thực, không tính thời gian đọc câu hỏi).
