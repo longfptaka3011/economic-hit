@@ -27,6 +27,7 @@ export interface QuizView {
   answeredCount: number;
   participantCount: number;
   canContinue: boolean;
+  penaltyRemainingSeconds: number;
   completedStages: number;
   totalStages: number;
   answer: (QuizAnswer & { correctIndex: number; explanation: string }) | null;
@@ -105,7 +106,7 @@ export class QuizDirector {
     return {
       roundId: this.active.id, title: this.active.title, reason: this.active.reason, question,
       answeredCount: this.answers.size, participantCount: this.participants.size,
-      canContinue: this.canContinue, completedStages: this.completed.size, totalStages: LEARNING_STAGES.length,
+      canContinue: this.canContinue, penaltyRemainingSeconds:0, completedStages: this.completed.size, totalStages: LEARNING_STAGES.length,
       answer: answer ? { ...answer, correctIndex, explanation } : null,
     };
   }

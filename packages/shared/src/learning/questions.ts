@@ -1,3 +1,4 @@
+import { EXTRA_LEARNING_QUESTIONS } from './extraQuestions.js';
 export type LearningTopic = 'profit' | 'commercial' | 'interest' | 'rent' | 'synthesis';
 
 export interface LearningQuestion {
@@ -119,4 +120,5 @@ export const LEARNING_QUESTIONS: readonly LearningQuestion[] = [
     prompt: 'Nhà sản xuất trả một phần cho thương nhân, chủ thể cho vay và địa chủ. Theo chủ đề đang học, nên hiểu các khoản này thế nào?',
     options: ['Đều là tiền công của nhà sản xuất', 'Đều là giá trị do trao đổi thuần túy tạo mới', 'Không có quan hệ với quá trình sản xuất', 'Là các hình thức phân chia giá trị thặng dư trong những quan hệ kinh tế khác nhau'], correctIndex: 3,
     explanation: 'Lợi nhuận thương nghiệp, lợi tức và địa tô biểu hiện các quan hệ phân chia giá trị thặng dư. Cần nhận ra nguồn gốc chung phía sau những hình thức thu nhập khác nhau.', sourcePages: [106, 107, 109, 111] },
+  ...EXTRA_LEARNING_QUESTIONS,
 ];

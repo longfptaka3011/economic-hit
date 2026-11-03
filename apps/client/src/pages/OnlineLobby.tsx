@@ -101,7 +101,7 @@ export function OnlineLobby({initialMode,initialProfile,onExit}:{initialMode:'cr
       <button className="pixel-button secondary" onClick={()=>{setProfile({nickname:me!.nickname,character:me!.character,color:me!.color});setEditing(true);setError('');}}>ĐỔI NHÂN VẬT / MÀU</button>
       <div className="room-actions"><button className="pixel-button secondary" onClick={()=>socket.emit('online:ready',!me?.ready)}>{me?.ready?'HỦY SẴN SÀNG':'SẴN SÀNG'}</button>
         {host && <button className="pixel-button primary" disabled={room.members.length<2 || !room.members.every(m=>m.ready)} onClick={()=>socket.emit('online:start')}>BẮT ĐẦU</button>}</div>
-      <p className="online-tip">Ai trả lời và đọc giải thích xong được đi tiếp ngay. Người đang làm bài đứng yên và được bảo vệ khỏi bị cắt đuôi; đồng hồ vẫn chạy. Rời hoặc mất kết nối sẽ loại người chơi khỏi lượt hiện tại.</p>
+      <p className="online-tip">Trả lời đúng: đi tiếp với khiên 5 giây và hồi tối đa 20 nộ. Sai: chờ 5 giây rồi mới đi tiếp, không thưởng nộ và xóa khiên cũ. Người đang làm bài/chờ phạt đứng yên, không bị cắt đuôi và cũng không thể cắt đuôi ai; đồng hồ vẫn chạy. Không chờ cả phòng.</p>
       <HowToPlay/>
     </>}
     {error && <p role="alert" className="online-error">{error}</p>}

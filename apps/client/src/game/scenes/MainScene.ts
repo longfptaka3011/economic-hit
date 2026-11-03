@@ -8,7 +8,7 @@ import { CameraSystem } from '../systems/CameraSystem';
 import { Player } from '../entities/Player';
 import { BotPlayer } from '../entities/BotPlayer';
 import { PauseOverlay } from '../ui/PauseOverlay';
-import { TerritoryGrid, TrailManager, TerritoryCaptureSystem, GAME_CONSTANTS, RaceQuizDirector, SPRINT_CONFIG, racePoints,raceStandings, type AvatarProfile } from '@market-mayhem/shared';
+import { TerritoryGrid, TrailManager, TerritoryCaptureSystem, GAME_CONSTANTS, RaceQuizDirector, learningOutcome, racePoints,raceStandings, type AvatarProfile } from '@market-mayhem/shared';
 import { TerritoryRenderer } from '../rendering/TerritoryRenderer';
 import { ParticleEffects } from '../effects/ParticleEffects';
 import { NotificationManager } from '../ui/NotificationManager';
@@ -408,8 +408,8 @@ export class MainScene extends Phaser.Scene {
     if(this.time.now-this.lastRaceEmit>=250){
       this.lastRaceEmit=this.time.now;
       this.game.events.emit('race:state',{remainingSeconds:this.matchRemainingSec,players:[
-        {id:this.player.id,nickname:this.avatar.nickname,color:this.avatar.color,score:profile.totalProfit,ownedCells:playerTiles,economy:this.economicSystem.getStatus(this.player.id),learning:this.quizDirector.isLearning(this.player.id),x:this.player.x,y:this.player.y},
-        {id:this.bot.id,nickname:'Tư Bản Robot',color:0xf97316,score:botProfile.totalProfit,ownedCells:botTiles,economy:this.economicSystem.getStatus(this.bot.id),x:this.bot.x,y:this.bot.y}
+        {id:this.player.id,nickname:this.avatar.nickname,color:this.avatar.color,score:profile.totalProfit,ownedCells:playerTiles,economy:this.economicSystem.getStatus(this.player.id),learning:this.quizDirector.isLearning(this.player.id),shield:this.player.shieldTimeRemaining,x:this.player.x,y:this.player.y},
+        {id:this.bot.id,nickname:'Tư Bản Robot',color:0xf97316,score:botProfile.totalProfit,ownedCells:botTiles,economy:this.economicSystem.getStatus(this.bot.id),shield:this.bot.shieldTimeRemaining,x:this.bot.x,y:this.bot.y}
       ]});
     }
 
@@ -435,7 +435,8 @@ export class MainScene extends Phaser.Scene {
   private continueAfterLearning(round:string):void {
     if(this.matchEnded)return;
     const answer=this.quizDirector.finish(round,this.player.id);if(!answer)return;
-    if(answer.correct)this.player.sprint.rage=Math.min(SPRINT_CONFIG.maxRage,this.player.sprint.rage+20);
+    const outcome=learningOutcome(answer.correct,this.player.sprint.rage);
+    this.player.shieldTimeRemaining=outcome.shieldSeconds;this.player.sprint.rage=outcome.rage;
     this.game.events.emit('controls:reset');
     this.sprintHUD.update(this.player.sprint);this.publishLearningState();
   }

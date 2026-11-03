@@ -4,6 +4,7 @@ import { LEARNING_QUESTIONS } from '@market-mayhem/shared';
 
 const members = ['one','two','three'].map((id,i)=>({id,nickname:id,character:i,color:i,ready:true}));
 const simulate=(match:OnlineMatch,seconds:number)=>{for(let i=0;i<Math.round(seconds*60);i++)match.step();};
+const correctFor=(id:string)=>LEARNING_QUESTIONS.find(question=>question.id===id)!.correctIndex;
 describe('Authoritative online match',()=>{
   it('accepts only fresh valid intent and caps sprint movement, including diagonals',()=>{
     const match=new OnlineMatch(members);
@@ -35,6 +36,7 @@ describe('Authoritative online match',()=>{
     expect(match.continue('one',view.roundId)).toBe(true);
     expect(match.quiz.viewFor('one')).toBeNull();expect(match.quiz.viewFor('two')).not.toBeNull();
     expect(match.actors.get('one')!.sprint.rage).toBe(50);
+    expect(actor.shield).toBe(5);
     expect(match.continue('one',view.roundId)).toBe(false);
     expect(match.actors.get('one')!.sprint.rage).toBe(50);
     expect(match.input('one',{sequence:11,dx:1,dy:0,sprint:false})).toBe(true);
@@ -44,7 +46,7 @@ describe('Authoritative online match',()=>{
   it('removes a disconnected participant from the answer gate and cleans its land',()=>{
     const match=new OnlineMatch(members);
     match.quiz.elapsedSeconds=60;match.step();const round=match.quiz.viewFor('one')!;
-    match.answer('one',round.roundId,0);match.answer('two',round.roundId,1);
+    const correct=correctFor(round.question.id);match.answer('one',round.roundId,correct);match.answer('two',round.roundId,correct);
     match.remove('three');
     expect(match.grid.getOwnerCellsCount('three')).toBe(0);
     expect(match.quiz.viewFor('one')?.participantCount).toBe(2);
@@ -67,12 +69,30 @@ describe('Authoritative online match',()=>{
     const match=new OnlineMatch(members);match.quiz.elapsedSeconds=60;match.step();
     const view=match.quiz.viewFor('one')!,a=match.actors.get('one')!,b=match.actors.get('two')!;
     a.shield=0;b.shield=0;match.trails.addPoint('one',100,100);b.x=1608;b.y=1608;
-    match.answer('two',view.roundId,0);match.continue('two',view.roundId);match.step();
+    const wrong=(correctFor(view.question.id)+1)%4;
+    match.answer('two',view.roundId,wrong);simulate(match,5);match.continue('two',view.roundId);match.step();
     expect(match.trails.hasTrail('one')).toBe(true);expect(a.shield).toBe(0);
     match.trails.addPoint('two',Math.floor(a.x/16),Math.floor(a.y/16));match.step();
     expect(b.shield).toBe(0); // A learner standing on a rival trail does not cut it.
-    match.answer('one',view.roundId,0);match.continue('one',view.roundId);match.step();
+    match.answer('one',view.roundId,wrong);simulate(match,5);match.continue('one',view.roundId);match.step();
     expect(a.shield).toBe(3.5);expect(match.trails.hasTrail('one')).toBe(false);
+  });
+  it('rejects early wrong-answer movement and review, then clears any old shield without rewarding rage',()=>{
+    const match=new OnlineMatch(members);match.quiz.elapsedSeconds=60;match.step();const view=match.quiz.viewFor('one')!;
+    const actor=match.actors.get('one')!;actor.shield=3;actor.sprint.rage=30;
+    match.answer('one',view.roundId,(correctFor(view.question.id)+1)%4);
+    expect(match.continue('one',view.roundId)).toBe(false);expect(match.input('one',{sequence:100,dx:1,dy:0,sprint:true})).toBe(false);
+    const {x,y}=actor;simulate(match,4.9);expect(actor.x).toBe(x);expect(actor.y).toBe(y);expect(match.continue('one',view.roundId)).toBe(false);
+    simulate(match,.1);expect(match.continue('one',view.roundId)).toBe(true);expect(actor.shield).toBe(0);expect(actor.sprint.rage).toBe(30);
+    expect(match.continue('one',view.roundId)).toBe(false);expect(actor.shield).toBe(0);
+  });
+  it('grants five seconds of actual trail protection after correct review and cannot refresh it by replaying continue',()=>{
+    const match=new OnlineMatch(members);match.quiz.elapsedSeconds=60;match.step();const view=match.quiz.viewFor('one')!;
+    const correct=correctFor(view.question.id);for(const id of ['one','two']){match.answer(id,view.roundId,correct);match.continue(id,view.roundId);}
+    const a=match.actors.get('one')!,b=match.actors.get('two')!;a.x=1608;a.y=1624;b.x=1608;b.y=1608;match.trails.addPoint('one',100,100);
+    simulate(match,4.9);expect(a.shield).toBeGreaterThan(0);expect(a.shield).toBeLessThan(.11);expect(match.trails.hasTrail('one')).toBe(true);
+    expect(match.continue('one',view.roundId)).toBe(false);expect(a.shield).toBeLessThan(.11);
+    simulate(match,.2);expect(a.x).toBe(64*16+8);expect(a.shield).toBeGreaterThan(3);expect(a.shield).toBeLessThanOrEqual(3.5);
   });
   it('finishes on real time even when nobody answers a question',()=>{
     const match=new OnlineMatch(members,60.1);simulate(match,61);

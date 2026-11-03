@@ -9,7 +9,8 @@ URL: https://market-mayhem-hfuo.onrender.com
 - Trận 8 phút, di chuyển, chiếm đất, cắt đuôi, hồi sinh, điểm kinh tế, bản đồ nhỏ và bảng kết quả. Chủ phòng đưa cả nhóm về lobby để chơi lượt mới.
 - HUD dùng chung local/online xếp hạng theo điểm, hiện khoảng cách dẫn đầu và thu nhập; hòa điểm được đồng hạng. Bốn khu xuất phát có cùng thu nhập cơ bản, thưởng đa dạng hóa tối đa 15%, chợ trung tâm giá trị cao hơn. Luật và bằng chứng xem [ECONOMY_BALANCE.md](ECONOMY_BALANCE.md).
 - Nộ độc lập; giữ Space hoặc nút CHẠY để tăng tốc. Điều khiển cảm ứng giữ nhiều ngón cho hướng chéo và chạy nhanh.
-- Năm chặng câu hỏi giống nhau cho cả phòng nhưng mở khóa độc lập. Người đang học đứng yên, không bị cắt đuôi và cũng không cắt được đuôi đối thủ. Ai trả lời và đọc giải thích xong được đi tiếp ngay; bot, đồng hồ và kinh tế vẫn chạy. Popup vùng đất có cả local và online, tự ẩn và không khóa di chuyển.
+- Năm chặng câu hỏi giống nhau cho cả phòng nhưng mở khóa độc lập. Người đang học/chờ phạt đứng yên, không bị cắt đuôi và cũng không cắt được đuôi đối thủ. Đọc giải thích và hết hình phạt (nếu sai) để đi tiếp; bot, đồng hồ và kinh tế vẫn chạy. Popup vùng đất có cả local và online, tự ẩn và không khóa di chuyển.
+- Ngân hàng 75 câu, 15 câu/chủ đề. Đúng nhận khiên 5 giây khi đi tiếp và hồi tối đa 20 nộ; sai bị khóa tiếp tục 5 giây từ lúc trả lời, không thưởng nộ và xóa khiên cũ khi đi tiếp. Thời gian đọc được tính vào hình phạt; không thể bỏ qua hoặc gia hạn thưởng bằng gửi lặp sự kiện.
 - Hướng dẫn chiếm đất, tính điểm và quy tắc câu hỏi ở trang chủ/lobby. Phân biệt mô phỏng trong game với kiến thức giáo trình.
 - Phaser tải khi bắt đầu trận, không nằm trong mã trang chủ ban đầu. Nút cảm ứng được nhả khi mất focus, hủy pointer, pause, kết thúc hoặc vào trạm câu hỏi.
 - GitHub Actions build/test và build Docker, sau đó kiểm tra container trả health, HTML, JavaScript và ảnh tileset. Xem kết quả từng lần chạy trong tab Actions của repository.

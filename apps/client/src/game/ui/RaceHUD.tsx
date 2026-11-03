@@ -1,7 +1,7 @@
 import React from 'react';
 import { CORE_DISTRICTS,DISTRICT_NAMES,economicZoneAt,racePoints,raceProgress,raceStandings,expansionAdvice,type EconomyStatus } from '@market-mayhem/shared';
 
-export interface RaceCompetitor { id:string;nickname:string;color:number;score:number;ownedCells:number;economy:EconomyStatus;learning?:boolean;x:number;y:number }
+export interface RaceCompetitor { id:string;nickname:string;color:number;score:number;ownedCells:number;economy:EconomyStatus;learning?:boolean;shield?:number;x:number;y:number }
 export interface RaceView { players:RaceCompetitor[];remainingSeconds:number }
 export function RaceHUD({players,playerId,remainingSeconds,heading,actions}:{players:RaceCompetitor[];playerId:string;remainingSeconds:number;heading:string;actions:React.ReactNode}){
   const own=players.find(player=>player.id===playerId);if(!own)return null;
@@ -14,6 +14,7 @@ export function RaceHUD({players,playerId,remainingSeconds,heading,actions}:{pla
     <p className="race-rule">Hết 8 phút: nhiều điểm nhất thắng · Hòa điểm = đồng hạng</p>
     <p className="race-rule">Đang ở: {DISTRICT_NAMES[economicZoneAt(Math.floor(own.x/16),Math.floor(own.y/16))]}</p>
     {own.learning && <p className="race-learning">Đang trả lời · Được bảo vệ khỏi cắt đuôi</p>}
+    {!own.learning && (own.shield??0)>0 && <p className="race-shield">KHIÊN {Math.ceil(own.shield!)}s · Bảo vệ khỏi cắt đuôi</p>}
     <p className="race-target">Mở rộng 25 ô {advice.name}: <strong>+{advice.gain.toFixed(1)} điểm/s</strong> <span>(ước tính)</span></p>
     <details className="race-income"><summary>THU NHẬP +{own.economy.ratePerSecond.toFixed(1)} điểm/s · Chi tiết</summary>
       <p>4 khu: 2 điểm/ô/s · Chợ: 3 điểm/ô/s. Mỗi khu thêm đủ 25 ô tăng 5% thu nhập bốn khu, tối đa 15%.</p>

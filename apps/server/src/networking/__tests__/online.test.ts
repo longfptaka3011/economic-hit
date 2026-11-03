@@ -4,6 +4,7 @@ import { Server } from 'socket.io';
 import { describe, expect, it } from 'vitest';
 import { setupOnline } from '../online.js';
 import { OnlineMatch } from '../../game/OnlineMatch.js';
+import { LEARNING_QUESTIONS } from '@market-mayhem/shared';
 
 // Reuse the app's installed client for an actual transport test, no second copy.
 const clientRequire=createRequire(new URL('../../../../../client/package.json',import.meta.url));
@@ -57,16 +58,22 @@ describe('Online room Socket.IO transport',()=>{
       expect(states.get(b).quiz.roundId).toBe(round);
       const time=running.remainingSeconds;await delay(50);
       expect(running.remainingSeconds).toBeLessThan(time);
-      a.emit('online:answer',running.id,round,0);await until(()=>!!states.get(a).quiz.answer);
+      const correct=LEARNING_QUESTIONS.find(question=>question.id===states.get(a).quiz.question.id)!.correctIndex;
+      a.emit('online:answer',running.id,round,correct);await until(()=>!!states.get(a).quiz.answer);
       expect(states.get(b).quiz.answer).toBeNull();
       expect(states.get(a).quiz.canContinue).toBe(true);
       a.emit('online:continue',running.id,round);await until(()=>states.get(a).quiz===null);
+      expect(running.actors.get(a.id)!.shield).toBeGreaterThan(4.8);
       expect(states.get(b).quiz.answer).toBeNull();expect(running.quiz.isLearning(b.id)).toBe(true);
       expect(running.input(a.id,{sequence:100,dx:1,dy:0,sprint:true})).toBe(true);
       expect(running.input(b.id,{sequence:100,dx:1,dy:0,sprint:true})).toBe(false);
       c.disconnect();await until(()=>states.get(b).quiz.participantCount===2);
-      b.emit('online:answer',running.id,round,1);await until(()=>!!states.get(b).quiz.answer);
+      b.emit('online:answer',running.id,round,(correct+1)%4);await until(()=>!!states.get(b).quiz.answer);
+      expect(states.get(b).quiz.canContinue).toBe(false);b.emit('online:continue',running.id,round);await delay(30);
+      expect(running.quiz.isLearning(b.id)).toBe(true);
+      for(let i=0;i<300;i++)running.step();await until(()=>states.get(b).quiz.canContinue);
       b.emit('online:continue',running.id,round);await until(()=>states.get(b).quiz===null);
+      expect(running.actors.get(b.id)!.shield).toBe(0);
       expect(running.quiz.isLearning(a.id)).toBe(false);expect(running.quiz.isLearning(b.id)).toBe(false);
       a.emit('online:leave');await until(()=>states.get(b).room.status==='finished');
       expect(states.get(b).room.hostId).toBe(b.id);

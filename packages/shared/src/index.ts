@@ -28,5 +28,6 @@ export * from './economy/raceStanding.js';
 export * from './learning/questions.js';
 export * from './learning/QuizDirector.js';
 export * from './learning/RaceQuizDirector.js';
+export * from './learning/learningRules.js';
 export * from './types/online.types.js';
 export * from './types/avatar.types.js';

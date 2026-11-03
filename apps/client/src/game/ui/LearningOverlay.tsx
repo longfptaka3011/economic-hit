@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import type { QuizView } from '@market-mayhem/shared';
+import { LEARNING_RULES,type QuizView } from '@market-mayhem/shared';
 
 interface Props {
   quiz: QuizView;
@@ -39,7 +39,7 @@ export function LearningOverlay({ quiz, onAnswer, onContinue, onExit, online=fal
     <section ref={panel} tabIndex={-1} className="learning-panel" role="dialog" aria-modal="true" aria-labelledby="learning-title" aria-describedby="learning-prompt">
       <div className="learning-topline"><span>{quiz.reason === 'crisis' ? 'TRẠM CỨU NGUY' : 'TRẠM TRI THỨC'}</span><span>{quiz.completedStages} / {quiz.totalStages} CHẶNG</span></div>
       <h2 id="learning-title">{quiz.title}</h2>
-      <p className="learning-pause-note">Bạn đứng yên và được bảo vệ khỏi bị cắt đuôi. {online?'Đối thủ':'Bot'} và đồng hồ vẫn chạy. Trả lời, đọc giải thích rồi tiếp tục ngay, không cần chờ người khác.</p>
+      <p className="learning-pause-note">Bạn đứng yên và được bảo vệ khỏi bị cắt đuôi, nhưng không thể cắt đuôi đối thủ. {online?'Đối thủ':'Bot'} và đồng hồ vẫn chạy. Đúng: đọc giải thích rồi đi tiếp ngay. Sai: phải chờ {LEARNING_RULES.wrongDelaySeconds} giây. Không chờ cả phòng.</p>
       {remainingSeconds!==undefined && <p className="learning-clock" role="timer">THỜI GIAN TRẬN CÒN {Math.floor(remainingSeconds/60)}:{Math.floor(remainingSeconds%60).toString().padStart(2,'0')}</p>}
       <p id="learning-prompt" className="learning-prompt">{quiz.question.prompt}</p>
       <div className="learning-options" role="group" aria-label="Chọn một đáp án">
@@ -52,10 +52,10 @@ export function LearningOverlay({ quiz, onAnswer, onContinue, onExit, online=fal
         })}
       </div>
       <div className="learning-feedback" role="status" aria-live="polite">
-        {quiz.answer ? <><strong className={quiz.answer.correct ? 'feedback-correct' : 'feedback-review'}>{quiz.answer.correct ? 'Chính xác! Tiếp tục để hồi tối đa 20 nộ.' : 'Cùng xem lại đáp án. Bạn vẫn có thể tiếp tục.'}</strong><p>{quiz.answer.explanation}</p></> : <p>Chọn đáp án để mở phần giải thích. Không có giới hạn thời gian trả lời.</p>}
+        {quiz.answer ? <><strong className={quiz.answer.correct ? 'feedback-correct' : 'feedback-review'}>{quiz.answer.correct ? `Chính xác! Khi đi tiếp: khiên ${LEARNING_RULES.correctShieldSeconds} giây và hồi tối đa ${LEARNING_RULES.correctRage} nộ.` : `Trả lời sai: chờ ${LEARNING_RULES.wrongDelaySeconds} giây để đọc lại. Không thưởng nộ; khiên cũ bị xóa khi đi tiếp.`}</strong><p>{quiz.answer.explanation}</p>{!quiz.answer.correct && quiz.penaltyRemainingSeconds>1e-8 && <p className="learning-penalty" role="timer">KHÓA DI CHUYỂN / CẮT ĐUÔI · CÒN {Math.ceil(quiz.penaltyRemainingSeconds-1e-8)} GIÂY</p>}</> : <p>Đúng: khiên {LEARNING_RULES.correctShieldSeconds} giây và hồi nộ. Sai: chờ {LEARNING_RULES.wrongDelaySeconds} giây, không nộ, xóa khiên cũ. Chọn đáp án để xem giải thích.</p>}
       </div>
       <p className="learning-source">Tham khảo: Giáo trình Kinh tế chính trị Mác – Lênin, chương 3, tr. {quiz.question.sourcePages.join(', ')}.</p>
-      <div className="learning-bottom"><span>{quiz.answer?'Đã trả lời · Đọc giải thích để tiếp tục cuộc đua':'Trả lời sớm để trở lại cuộc đua'}</span><button ref={continueButton} className="pixel-button primary" disabled={!quiz.canContinue} onClick={() => onContinue(quiz.roundId)}>{quiz.canContinue ? 'TIẾP TỤC NGAY →' : 'HÃY CHỌN MỘT ĐÁP ÁN'}</button></div>
+      <div className="learning-bottom"><span>{quiz.answer?'Đã trả lời · Đọc giải thích để tiếp tục cuộc đua':'Trả lời chính xác để giành lợi thế'}</span><button ref={continueButton} className="pixel-button primary" disabled={!quiz.canContinue} onClick={() => onContinue(quiz.roundId)}>{quiz.canContinue ? 'TIẾP TỤC NGAY →' : quiz.answer?`CHỜ ${Math.max(1,Math.ceil(quiz.penaltyRemainingSeconds-1e-8))} GIÂY`:'HÃY CHỌN MỘT ĐÁP ÁN'}</button></div>
       <button className="learning-exit" onClick={onExit}>Kết thúc lượt chơi và về trang chủ</button>
     </section>
   </div>;

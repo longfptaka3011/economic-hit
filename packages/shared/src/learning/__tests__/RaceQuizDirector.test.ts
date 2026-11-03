@@ -1,5 +1,7 @@
 import { describe,it,expect } from 'vitest';
 import { RaceQuizDirector } from '../RaceQuizDirector.js';
+import { LEARNING_QUESTIONS } from '../questions.js';
+const correctFor=(id:string)=>LEARNING_QUESTIONS.find(question=>question.id===id)!.correctIndex;
 
 describe('Independent learning race',()=>{
   it('shares questions but unlocks only the learner who has answered and reviewed',()=>{
@@ -7,7 +9,7 @@ describe('Independent learning race',()=>{
     const first=quiz.viewFor('a')!;expect(quiz.viewFor('b')?.question.id).toBe(first.question.id);
     expect(first.question).not.toHaveProperty('correctIndex');expect(first.question).not.toHaveProperty('explanation');
     expect(quiz.finish(first.roundId,'a')).toBeNull();
-    expect(quiz.submit(first.roundId,'a',0)).toBe(true);
+    expect(quiz.submit(first.roundId,'a',correctFor(first.question.id))).toBe(true);
     expect(quiz.viewFor('a')?.canContinue).toBe(true);expect(quiz.viewFor('b')?.canContinue).toBe(false);
     expect(quiz.viewFor('b')?.answer).toBeNull();
     expect(quiz.finish(first.roundId,'a')).toBeTruthy();expect(quiz.viewFor('a')).toBeNull();
@@ -15,10 +17,10 @@ describe('Independent learning race',()=>{
   });
   it('keeps real time and queues later stages independently without replacing unanswered questions',()=>{
     const quiz=new RaceQuizDirector(['a','b'],()=>0);quiz.update(60);const first=quiz.viewFor('a')!;
-    quiz.submit(first.roundId,'a',0);quiz.finish(first.roundId,'a');quiz.update(90);
+    quiz.submit(first.roundId,'a',correctFor(first.question.id));quiz.finish(first.roundId,'a');quiz.update(90);
     expect(quiz.elapsedSeconds).toBe(150);expect(quiz.viewFor('a')?.question.topic).toBe('commercial');
     expect(quiz.viewFor('b')?.roundId).toBe(first.roundId);
-    quiz.submit(first.roundId,'b',1);quiz.finish(first.roundId,'b');
+    quiz.submit(first.roundId,'b',correctFor(first.question.id));quiz.finish(first.roundId,'b');
     expect(quiz.viewFor('b')?.question.id).toBe(quiz.viewFor('a')?.question.id);
     expect(quiz.viewFor('b')?.completedStages).toBe(1);
   });
@@ -33,7 +35,26 @@ describe('Independent learning race',()=>{
   it('targets crisis questions to the eliminated player and caps their repetition',()=>{
     const quiz=new RaceQuizDirector(['a','b'],()=>0);quiz.update(30);quiz.requestCrisis('a','profit');quiz.update(0);
     const round=quiz.viewFor('a')!;expect(round.reason).toBe('crisis');expect(quiz.viewFor('b')).toBeNull();
-    quiz.submit(round.roundId,'a',0);quiz.finish(round.roundId,'a');
+    quiz.submit(round.roundId,'a',correctFor(round.question.id));quiz.finish(round.roundId,'a');
     quiz.requestCrisis('a','profit');quiz.update(0);expect(quiz.viewFor('a')).toBeNull();
+  });
+  it('holds a wrong answer for five real game seconds and duplicate submissions cannot shorten or restart the penalty',()=>{
+    const quiz=new RaceQuizDirector(['a','b'],()=>0);quiz.update(60);const view=quiz.viewFor('a')!;
+    const wrong=(correctFor(view.question.id)+1)%4;quiz.submit(view.roundId,'a',wrong);
+    expect(quiz.viewFor('a')).toMatchObject({canContinue:false,penaltyRemainingSeconds:5});
+    expect(quiz.finish(view.roundId,'a')).toBeNull();expect(quiz.isLearning('a')).toBe(true);
+    expect(quiz.update(1)).toBe(true);expect(quiz.viewFor('a')?.penaltyRemainingSeconds).toBe(4);
+    expect(quiz.submit(view.roundId,'a',correctFor(view.question.id))).toBe(false);
+    quiz.update(3.99);expect(quiz.finish(view.roundId,'a')).toBeNull();
+    quiz.update(.01);expect(quiz.viewFor('a')?.canContinue).toBe(true);
+    expect(quiz.finish(view.roundId,'a')?.correct).toBe(false);
+    expect(quiz.finish(view.roundId,'a')).toBeNull();expect(quiz.isLearning('b')).toBe(true);
+  });
+  it('starts each wrong-answer penalty at that learner submission time, not the shared round time',()=>{
+    const quiz=new RaceQuizDirector(['a','b'],()=>0);quiz.update(60);const view=quiz.viewFor('a')!,wrong=(correctFor(view.question.id)+1)%4;
+    quiz.submit(view.roundId,'a',wrong);quiz.update(2);quiz.submit(view.roundId,'b',wrong);quiz.update(3);
+    expect(quiz.viewFor('a')?.canContinue).toBe(true);expect(quiz.viewFor('b')?.penaltyRemainingSeconds).toBe(2);
+    expect(quiz.finish(view.roundId,'a')?.correct).toBe(false);expect(quiz.finish(view.roundId,'b')).toBeNull();
+    quiz.update(2);expect(quiz.finish(view.roundId,'b')?.correct).toBe(false);
   });
 });

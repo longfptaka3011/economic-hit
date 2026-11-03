@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { RaceQuizDirector, SprintAbility, TerritoryGrid, TrailManager, TerritoryCaptureSystem, GAME_CONSTANTS, EconomySystem,
+import { RaceQuizDirector, SprintAbility, TerritoryGrid, TrailManager, TerritoryCaptureSystem, GAME_CONSTANTS, EconomySystem,learningOutcome,
   type OnlineMember, type OnlineInput, type OnlineSnapshot, type OnlinePlayer } from '@market-mayhem/shared';
 
 const SPAWNS = [{col:64,row:64},{col:190,row:64},{col:64,row:190},{col:190,row:190}];
@@ -62,7 +62,8 @@ export class OnlineMatch {
   continue(playerId: string, roundId: string): boolean {
     const actor=this.actors.get(playerId);if(!actor || this.finished)return false;
     const answer=this.quiz.finish(roundId,playerId);if(!answer)return false;
-    if(answer.correct)actor.sprint.rage=Math.min(100,actor.sprint.rage+20);
+    const outcome=learningOutcome(answer.correct,actor.sprint.rage);
+    actor.shield=outcome.shieldSeconds;actor.sprint.rage=outcome.rage;
     actor.input=STOP;actor.vx=0;actor.vy=0;actor.inputAge=0;
     this.quizVersion++;
     return true;

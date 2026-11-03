@@ -8,7 +8,7 @@
 2. Mở client ở `http://localhost:5173`, chọn **Tạo phòng**, nhập tên. Mã phòng gồm sáu chữ số.
 3. Mở tab/trình duyệt thứ hai, chọn **Vào phòng**, nhập tên và mã phòng. Phòng hỗ trợ 2–4 người.
 4. Mọi người nhấn **Sẵn sàng**, chủ phòng nhấn **Bắt đầu**. WASD/mũi tên để di chuyển, giữ Space để tăng tốc và tiêu hao nộ; cuộn chuột đổi zoom. Điện thoại dùng các nút hướng và giữ CHẠY, có thể giữ nhiều ngón cùng lúc.
-5. Các mốc 1:00, 2:30, 4:00, 5:30, 7:00 mở câu hỏi giống nhau cho cả phòng. Chỉ người đang trả lời đứng yên và được bảo vệ khỏi cắt đuôi; không được cắt đuôi người khác khi học. Ai trả lời và xem giải thích xong được tiếp tục ngay; đồng hồ, đối thủ và kinh tế vẫn chạy. Đáp án sai vẫn được đi tiếp; đúng hồi tối đa 20 nộ một lần.
+5. Các mốc 1:00, 2:30, 4:00, 5:30, 7:00 chọn câu từ ngân hàng 75 câu (15/chủ đề), giống nhau cho cả phòng. Người đang học/chờ phạt đứng yên và được bảo vệ khỏi cắt đuôi, không thể cắt đuôi người khác. Đúng được tiếp tục với khiên 5 giây và hồi tối đa 20 nộ. Sai phải chờ 5 giây từ lúc gửi đáp án, không thưởng nộ và bị xóa khiên cũ khi đi tiếp. Server kiểm soát thời gian; mọi người tiến độc lập, đồng hồ và kinh tế vẫn chạy.
 6. Hết 8 phút hoặc còn dưới hai người, trận kết thúc. Xếp hạng theo điểm kinh tế; chủ phòng có thể đưa cả phòng về lobby để chuẩn bị lượt mới.
 
 Khi phát triển, Vite proxy Socket.IO về `http://localhost:3001`, hoặc dùng `VITE_SERVER_URL`. Production luôn dùng cùng origin với trang web. Hướng dẫn Docker/Render nằm trong [DEPLOY_RENDER.md](DEPLOY_RENDER.md).

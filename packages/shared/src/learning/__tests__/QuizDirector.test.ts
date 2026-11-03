@@ -89,10 +89,11 @@ describe('Learning checkpoints', () => {
 });
 
 describe('Textbook question bank', () => {
-  it('has 25 distinct questions, five per topic, with four unique choices and traceable references', () => {
-    expect(LEARNING_QUESTIONS).toHaveLength(25);
-    expect(new Set(LEARNING_QUESTIONS.map(q => q.id)).size).toBe(25);
-    for (const stage of LEARNING_STAGES) expect(LEARNING_QUESTIONS.filter(q => q.topic === stage.topic)).toHaveLength(5);
+  it('has 75 distinct questions, fifteen per topic, with four unique choices and traceable references', () => {
+    expect(LEARNING_QUESTIONS).toHaveLength(75);
+    expect(new Set(LEARNING_QUESTIONS.map(q => q.id)).size).toBe(75);
+    expect(new Set(LEARNING_QUESTIONS.map(q => q.prompt)).size).toBe(75);
+    for (const stage of LEARNING_STAGES) expect(LEARNING_QUESTIONS.filter(q => q.topic === stage.topic)).toHaveLength(15);
     for (const q of LEARNING_QUESTIONS) {
       expect(new Set(q.options).size).toBe(4);
       expect(q.options[q.correctIndex]).toBeTruthy();
@@ -105,7 +106,15 @@ describe('Textbook question bank', () => {
   it('checks the independently calculated numerical answers', () => {
     const expected = { 'profit-cost': '100', 'profit-rate': '20%', 'commercial-example': '15',
       'interest-rate': '5%', 'interest-split': '45', 'rent-land-price': '200 triệu',
-      'synthesis-weighted': '30%', 'synthesis-production-price': '110' };
+      'synthesis-weighted': '30%', 'synthesis-production-price': '110',
+      'profit-depreciation':'140','profit-revenue':'30','profit-break-even':'0','profit-capital-denominator':'20%',
+      'profit-saving-example':'33,33%','commercial-split-total':'100','commercial-two-margins':'15 và 15',
+      'commercial-margin-revenue':'40','commercial-no-margin':'0','interest-principal-inverse':'500',
+      'interest-amount':'32','interest-period':'5%/quý','interest-entrepreneur-residual':'60','interest-principal-repayment':'60',
+      'interest-distribution-ratio':'25%','rent-excess-calculation':'25','rent-capitalization-example':'200 triệu',
+      'rent-absolute-difference':'15','synthesis-weighted-unequal':'25%','synthesis-average-profit-amount':'30',
+      'synthesis-production-price-new':'150','synthesis-equal-rate-not-amount':'10 và 30','synthesis-distribution-example':'55',
+      'synthesis-two-rate-denominators':'20% và 4%' };
     for (const [id, answer] of Object.entries(expected)) {
       const question = LEARNING_QUESTIONS.find(q => q.id === id)!;
       expect(question.options[question.correctIndex]).toBe(answer);
