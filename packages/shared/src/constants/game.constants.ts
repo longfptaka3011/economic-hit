@@ -22,7 +22,7 @@ export const GAME_CONSTANTS = {
   INITIAL_TERRITORY_RADIUS: 2, // 5x5 grid cells around initial spawn
 
   // Match configuration
-  MATCH_DURATION_SECONDS: 480, // 8 minutes (reading time at checkpoints is excluded)
+  MATCH_DURATION_SECONDS: 480, // 8 minutes, including time spent answering questions
   RESPAWN_COOLDOWN_SECONDS: 3,
 
   // Room limits

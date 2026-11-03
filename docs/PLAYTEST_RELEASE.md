@@ -7,6 +7,7 @@ URL: https://market-mayhem-hfuo.onrender.com
 - Local với bot và phòng online 2–4 người, cùng một server Render phục vụ web và Socket.IO.
 - Tên bắt buộc, 6 nhân vật, 8 màu; không trùng màu trong phòng. Thay ngoại hình ở lobby rồi sẵn sàng lại.
 - Trận 8 phút, di chuyển, chiếm đất, cắt đuôi, hồi sinh, điểm kinh tế, bản đồ nhỏ và bảng kết quả. Chủ phòng đưa cả nhóm về lobby để chơi lượt mới.
+- HUD dùng chung local/online xếp hạng theo điểm, hiện khoảng cách dẫn đầu và thu nhập; hòa điểm được đồng hạng. Bốn khu xuất phát có cùng thu nhập cơ bản, thưởng đa dạng hóa tối đa 15%, chợ trung tâm giá trị cao hơn. Luật và bằng chứng xem [ECONOMY_BALANCE.md](ECONOMY_BALANCE.md).
 - Nộ độc lập; giữ Space hoặc nút CHẠY để tăng tốc. Điều khiển cảm ứng giữ nhiều ngón cho hướng chéo và chạy nhanh.
 - Năm chặng câu hỏi giống nhau cho cả phòng nhưng mở khóa độc lập. Người đang học đứng yên, không bị cắt đuôi và cũng không cắt được đuôi đối thủ. Ai trả lời và đọc giải thích xong được đi tiếp ngay; bot, đồng hồ và kinh tế vẫn chạy. Popup vùng đất có cả local và online, tự ẩn và không khóa di chuyển.
 - Hướng dẫn chiếm đất, tính điểm và quy tắc câu hỏi ở trang chủ/lobby. Phân biệt mô phỏng trong game với kiến thức giáo trình.

@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { RaceQuizDirector, SprintAbility, TerritoryGrid, TrailManager, TerritoryCaptureSystem, GAME_CONSTANTS,
+import { RaceQuizDirector, SprintAbility, TerritoryGrid, TrailManager, TerritoryCaptureSystem, GAME_CONSTANTS, EconomySystem,
   type OnlineMember, type OnlineInput, type OnlineSnapshot, type OnlinePlayer } from '@market-mayhem/shared';
 
 const SPAWNS = [{col:64,row:64},{col:190,row:64},{col:64,row:190},{col:190,row:190}];
@@ -7,7 +7,7 @@ const STOP: OnlineInput = { sequence: -1, dx: 0, dy: 0, sprint: false };
 interface Actor {
   member: OnlineMember; x: number; y: number; vx: number; vy: number;
   spawn: {col:number;row:number}; sprint: SprintAbility; shield: number; score: number;
-  input: OnlineInput; inputAge: number; sequence: number; interest: number; toll: number;
+  input: OnlineInput; inputAge: number; sequence: number;
 }
 
 /** Authoritative fixed-step world: clients send only intent, never position or score. */
@@ -15,6 +15,7 @@ export class OnlineMatch {
   readonly id = randomUUID();
   readonly grid = new TerritoryGrid(256, 256);
   readonly trails = new TrailManager();
+  readonly economy=new EconomySystem(this.grid);
   readonly quiz: RaceQuizDirector;
   readonly actors = new Map<string, Actor>();
   remainingSeconds: number = GAME_CONSTANTS.MATCH_DURATION_SECONDS;
@@ -28,8 +29,9 @@ export class OnlineMatch {
     this.quiz = new RaceQuizDirector(members.map(member => member.id));
     members.forEach((member, i) => {
       const spawn = SPAWNS[i];
+      this.economy.registerPlayer(member.id);const economy=this.economy;
       this.actors.set(member.id, { member, spawn, x: spawn.col*16+8, y: spawn.row*16+8, vx:0, vy:0,
-        sprint: new SprintAbility(), shield:3.5, score:0, input:STOP, inputAge:0, sequence:-1, interest:0, toll:0 });
+        sprint: new SprintAbility(), shield:3.5, get score(){return economy.getProfile(member.id).totalProfit;}, input:STOP, inputAge:0, sequence:-1 });
       this.grid.spawnTerritory(member.id, spawn.col, spawn.row, 2);
     });
   }
@@ -72,8 +74,9 @@ export class OnlineMatch {
     this.grid.clearOwner(playerId);
     this.revision++;
     this.quiz.removeParticipant(playerId);
+    this.economy.removePlayer(playerId);
     this.quizVersion++;
-    if (this.actors.size < 2) { this.finished = true; this.clearInputs(); }
+    if (this.actors.size < 2) { this.economy.settleInterest();this.finished = true; this.clearInputs(); }
   }
 
   private respawn(id: string, actor: Actor): void {
@@ -88,10 +91,10 @@ export class OnlineMatch {
 
   step(dt = 1/60): void {
     if (this.finished) return;
+    dt=Math.min(dt,this.remainingSeconds);
     if (this.quiz.update(dt))this.quizVersion++;
     this.tick++;
     this.remainingSeconds = Math.max(0, this.remainingSeconds - dt);
-    if (!this.remainingSeconds) { this.finished = true; this.clearInputs(); return; }
     for (const actor of this.actors.values()) {
       if(this.quiz.isLearning(actor.member.id)){
         actor.input=STOP;actor.vx=0;actor.vy=0;actor.sprint.isSprinting=false;continue;
@@ -124,42 +127,18 @@ export class OnlineMatch {
         TerritoryCaptureSystem.capture(this.grid,id,this.trails.getTrail(id));
         this.trails.clearTrail(id); this.revision++;
       }
-      actor.toll = Math.max(0, actor.toll-dt);
       const owner=this.grid.getOwner(col,row);
-      if (owner && owner !== id && col>=128 && row>=128 && !actor.toll) {
-        const recipient=this.actors.get(owner);
-        if (recipient) { const toll=Math.min(5,actor.score);actor.score-=toll;recipient.score+=toll;actor.toll=.8; }
-      }
+      if(owner && owner!==id)this.economy.collectGroundRentToll(id,owner,col,row);
     }
     // Cache zone totals until ownership changes; no full-grid scan each server tick.
-    this.updateEconomy(dt);
-  }
-
-  private countsRevision = -1;
-  private counts = new Map<string, number[]>();
-  private updateEconomy(dt:number):void {
-    if (this.countsRevision !== this.revision) {
-      this.counts.clear();
-      for (const id of this.actors.keys()) this.counts.set(id,[0,0,0,0,0]);
-      for (let row=0;row<256;row++) for (let col=0;col<256;col++) {
-        const owner=this.grid.getOwner(col,row);if(!owner)continue;
-        const zone=Math.hypot(col-128,row-128)<=30?4:col<128?(row<128?0:2):(row<128?1:3);
-        const counts=this.counts.get(owner);if(counts)counts[zone]++;
-      }
-      this.countsRevision=this.revision;
-    }
-    for (const [id,actor] of this.actors) {
-      const [industrial,commercial,financial,land,central]=this.counts.get(id)!;
-      actor.score += (industrial*2.5*(1+commercial/80)+commercial*1.8+land*1.5+central*1.5)*dt;
-      actor.interest+=dt;
-      if(actor.interest>=2.5){actor.interest-=2.5;if(financial && actor.score>50)actor.score+=actor.score*(.015+financial*.001);}
-    }
+    this.economy.update(dt);
+    if(!this.remainingSeconds){this.economy.settleInterest();this.finished=true;this.clearInputs();}
   }
 
   snapshot(includeTerritory = false): OnlineSnapshot {
     const players: OnlinePlayer[] = [...this.actors.values()].map(a=>({...a.member,x:a.x,y:a.y,vx:a.vx,vy:a.vy,
       rage:a.sprint.rage,sprinting:a.sprint.isSprinting,exhausted:a.sprint.exhausted,shield:a.shield,score:a.score,learning:!this.finished && this.quiz.isLearning(a.member.id),
-      ownedCells:this.grid.getOwnerCellsCount(a.member.id)}));
+      ownedCells:this.grid.getOwnerCellsCount(a.member.id),economy:this.economy.getStatus(a.member.id)}));
     const territory: NonNullable<OnlineSnapshot['territory']>=[];
     if(includeTerritory)for(const id of this.actors.keys())for(const cell of this.grid.getAllOwnedCells(id))territory.push({...cell,owner:id});
     return {matchId:this.id,tick:this.tick,remainingSeconds:this.remainingSeconds,paused:false,

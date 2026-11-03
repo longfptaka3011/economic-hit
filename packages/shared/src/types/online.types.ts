@@ -1,5 +1,6 @@
 import type { QuizView } from '../learning/QuizDirector.js';
 import type { AvatarProfile } from './avatar.types.js';
+import type { EconomyStatus } from '../economy/EconomySystem.js';
 
 export const ONLINE_COLORS = [0x38bdf8, 0xfb923c, 0xa3e635, 0xe879f9] as const;
 export interface OnlineMember extends AvatarProfile { id: string; ready: boolean }
@@ -11,6 +12,7 @@ export interface OnlinePlayer extends OnlineMember {
   x: number; y: number; vx: number; vy: number; rage: number; sprinting: boolean; exhausted: boolean;
   shield: number; score: number; ownedCells: number;
   learning: boolean;
+  economy: EconomyStatus;
 }
 export interface OnlineSnapshot {
   matchId: string; tick: number; remainingSeconds: number; paused: boolean; finished: boolean;

@@ -352,6 +352,11 @@ export class ArcadeHUD {
 
     this.powerupIconText.setPosition(puX + 12, puY + 8);
     this.powerupStatusText.setPosition(puX + 12, puY + 26);
+    // React RaceHUD is shared with online: one score ranking and one set of controls.
+    [this.capitalCardBg,this.capitalTitleText,this.capitalRateText,this.breakdownText,this.timerBg,this.timerText,
+      this.zoneBannerBg,this.zoneBannerText,this.leaderboardBg,this.leaderboardTitle,this.leaderboardPlayerText,this.leaderboardBotText,
+      this.fullscreenBtnBg,this.fullscreenBtnText,this.fullscreenHitArea,this.pauseBtnBg,this.pauseBtnText,this.pauseHitArea].forEach(object=>object.setVisible(false));
+    this.fullscreenHitArea.disableInteractive();this.pauseHitArea.disableInteractive();
   }
 
   public setFullscreenButtonText(isFullscreen: boolean): void {

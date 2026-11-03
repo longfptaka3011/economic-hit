@@ -224,7 +224,7 @@ export const HomePage: React.FC = () => {
                     <span>Khu Tài Chính</span>
                   </div>
                   <p className="text-xs text-slate-400">
-                    Tư bản tiền tệ cho vay thu lợi tức định kỳ trên quy mô vốn tích lũy.
+                    Lợi tức tích lũy từ lãnh thổ tài chính, chi trả mỗi 2,5 giây. Bốn khu xuất phát có cùng thu nhập cơ bản.
                   </p>
                 </div>
                 <span className="text-[11px] font-semibold text-emerald-400/90 mt-3">Lợi tức (Interest)</span>

@@ -36,7 +36,7 @@ export class OnlineScene extends Phaser.Scene {
     this.territory=new TerritoryRenderer(this,this.grid,this.trails);
     this.cameraSystem=new CameraSystem(this);
     this.controls=new InputSystem(this);
-    this.discovery=new DiscoveryPopup(this,260);
+    this.discovery=new DiscoveryPopup(this,340);
     this.ready=true;this.applySnapshot(this.snapshot);
     const local=this.renderers.get(this.playerId);
     if(local)this.cameraSystem.followTarget(local.getContainer());

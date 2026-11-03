@@ -10,6 +10,8 @@ export class TerritoryGrid {
   public readonly totalCells: number;
   private owners: (string | null)[][];
   private ownerCounts: Map<string, number> = new Map();
+  private ownershipRevision=0;
+  public get revision():number {return this.ownershipRevision;}
 
   constructor(cols: number = 80, rows: number = 80) {
     this.cols = cols;
@@ -36,6 +38,7 @@ export class TerritoryGrid {
 
     const prevOwner = this.owners[row][col];
     if (prevOwner === newOwnerId) return;
+    this.ownershipRevision++;
 
     // Decrement previous owner count
     if (prevOwner !== null) {
@@ -87,14 +90,17 @@ export class TerritoryGrid {
   }
 
   public clearOwner(ownerId: string): void {
+    let changed=false;
     for (let r = 0; r < this.rows; r++) {
       for (let c = 0; c < this.cols; c++) {
         if (this.owners[r][c] === ownerId) {
           this.owners[r][c] = null;
+          changed=true;
         }
       }
     }
     this.ownerCounts.delete(ownerId);
+    if(changed)this.ownershipRevision++;
   }
 
   public getAllOwnedCells(ownerId: string): Array<{ col: number; row: number }> {

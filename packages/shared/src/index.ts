@@ -21,6 +21,8 @@ export * from './territory/TrailManager.js';
 
 // Abilities
 export * from './abilities/SprintAbility.js';
+export * from './economy/EconomySystem.js';
+export * from './economy/raceStanding.js';
 
 // Learning checkpoints
 export * from './learning/questions.js';

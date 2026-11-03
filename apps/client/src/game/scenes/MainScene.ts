@@ -8,7 +8,7 @@ import { CameraSystem } from '../systems/CameraSystem';
 import { Player } from '../entities/Player';
 import { BotPlayer } from '../entities/BotPlayer';
 import { PauseOverlay } from '../ui/PauseOverlay';
-import { TerritoryGrid, TrailManager, TerritoryCaptureSystem, GAME_CONSTANTS, RaceQuizDirector, SPRINT_CONFIG, type AvatarProfile } from '@market-mayhem/shared';
+import { TerritoryGrid, TrailManager, TerritoryCaptureSystem, GAME_CONSTANTS, RaceQuizDirector, SPRINT_CONFIG, racePoints,raceStandings, type AvatarProfile } from '@market-mayhem/shared';
 import { TerritoryRenderer } from '../rendering/TerritoryRenderer';
 import { ParticleEffects } from '../effects/ParticleEffects';
 import { NotificationManager } from '../ui/NotificationManager';
@@ -58,11 +58,10 @@ export class MainScene extends Phaser.Scene {
   // Match duration shared with the authoritative server.
   private matchRemainingSec: number = GAME_CONSTANTS.MATCH_DURATION_SECONDS;
 
-  // Toll cooldown timer to prevent spamming toll per frame
-  // Toll cooldown timer
-  private tollCooldown: number = 0;
   private matchEnded=false;
   private lastClockSecond=-1;
+  private lastRaceEmit=-Infinity;
+  private togglePause=()=>{if(!this.quizDirector.isLearning(this.player.id) && !this.matchEnded)this.pauseOverlay.toggle();};
 
   constructor(private avatar:AvatarProfile={nickname:'Nhà Tư Bản Trẻ',character:0,color:0x38bdf8}) {
     super({ key: 'MainScene' });
@@ -78,6 +77,8 @@ export class MainScene extends Phaser.Scene {
     this.matchRemainingSec=GAME_CONSTANTS.MATCH_DURATION_SECONDS;
     this.matchEnded=false;
     this.lastClockSecond=-1;
+    this.lastRaceEmit=-Infinity;
+    this.game.events.on('request-pause',this.togglePause);
     this.quizDirector=new RaceQuizDirector(['local_player']);
     this.game.events.on('learning:answer',this.submitLearningAnswer,this);
     this.game.events.on('learning:continue',this.continueAfterLearning,this);
@@ -176,7 +177,7 @@ export class MainScene extends Phaser.Scene {
 
     this.sprintHUD=new SprintHUD(this);
     this.regionManager=new RegionManager();
-    this.discoveryPopup=new DiscoveryPopup(this);
+    this.discoveryPopup=new DiscoveryPopup(this,340);
     this.scale.on('resize',this.onResize,this);
   }
   private onResize(size:Phaser.Structs.Size):void {
@@ -213,11 +214,14 @@ export class MainScene extends Phaser.Scene {
     const clockSecond=Math.floor(this.matchRemainingSec);
     if(clockSecond!==this.lastClockSecond){this.lastClockSecond=clockSecond;this.game.events.emit('match:time',clockSecond);}
     if(this.matchRemainingSec===0){
+      this.economicSystem.update(deltaSec);this.economicSystem.settleInterest();
       this.matchEnded=true;this.input.keyboard?.resetKeys();this.tweens.pauseAll();this.anims.pauseAll();this.time.paused=true;
       this.game.events.emit('learning:state',null);
-      const rankings=[{id:this.player.id,nickname:this.avatar.nickname},{id:this.bot.id,nickname:'Tư Bản Robot'}].map(player=>({
+      const competitors=[{id:this.player.id,nickname:this.avatar.nickname},{id:this.bot.id,nickname:'Tư Bản Robot'}].map(player=>({
+        id:player.id,
         nickname:player.nickname,score:this.economicSystem.getProfile(player.id).totalProfit,ownedCells:this.territoryGrid.getOwnerCellsCount(player.id)
-      })).sort((a,b)=>b.score-a.score);
+      }));
+      const rankings=raceStandings(competitors).map(({player,rank})=>({...player,rank,score:racePoints(player.score)}));
       this.game.events.emit('local:finished',rankings);return;
     }
 
@@ -308,25 +312,21 @@ export class MainScene extends Phaser.Scene {
   }
 
   private checkGroundRentTolls(deltaSec: number, pCol: number, pRow: number): void {
-    this.tollCooldown = Math.max(0, this.tollCooldown - deltaSec);
-    if (this.tollCooldown > 0) return;
 
     // Check if Bot stepped on Player's Land territory
     const botCellOwner = this.territoryGrid.getOwner(this.bot.col, this.bot.row);
     if (botCellOwner === this.player.id) {
       const toll = this.economicSystem.collectGroundRentToll('bot_player', 'local_player', this.bot.col, this.bot.row);
       if (toll > 0) {
-        this.tollCooldown = 0.8;
         this.notificationManager.showFloatingProfit(this.player.x, this.player.y, `+${toll} ĐỊA TÔ TỪ BOT!`, '#c084fc');
       }
     }
 
     // Check if Player stepped on Bot's Land territory
     const playerCellOwner = this.territoryGrid.getOwner(pCol, pRow);
-    if (playerCellOwner === this.bot.id) {
+    if (playerCellOwner === this.bot.id && !this.quizDirector.isLearning(this.player.id)) {
       const toll = this.economicSystem.collectGroundRentToll('local_player', 'bot_player', pCol, pRow);
       if (toll > 0) {
-        this.tollCooldown = 0.8;
         this.notificationManager.showFloatingProfit(this.player.x, this.player.y, `-${toll} NỘP ĐỊA TÔ CHO BOT!`, '#ef4444');
       }
     }
@@ -403,7 +403,15 @@ export class MainScene extends Phaser.Scene {
         profit: botProfile.totalProfit,
         hasShield: this.bot.shieldTimeRemaining > 0,
       },
-    ].sort((a, b) => b.percentage - a.percentage);
+    ].sort((a, b) => racePoints(b.profit) - racePoints(a.profit));
+
+    if(this.time.now-this.lastRaceEmit>=250){
+      this.lastRaceEmit=this.time.now;
+      this.game.events.emit('race:state',{remainingSeconds:this.matchRemainingSec,players:[
+        {id:this.player.id,nickname:this.avatar.nickname,color:this.avatar.color,score:profile.totalProfit,ownedCells:playerTiles,economy:this.economicSystem.getStatus(this.player.id),learning:this.quizDirector.isLearning(this.player.id),x:this.player.x,y:this.player.y},
+        {id:this.bot.id,nickname:'Tư Bản Robot',color:0xf97316,score:botProfile.totalProfit,ownedCells:botTiles,economy:this.economicSystem.getStatus(this.bot.id),x:this.bot.x,y:this.bot.y}
+      ]});
+    }
 
     const region=this.regionManager.getCurrentRegion();
     const zoneTitle=region.vietnameseName,zoneColor=region.textColor;
@@ -432,6 +440,7 @@ export class MainScene extends Phaser.Scene {
     this.sprintHUD.update(this.player.sprint);this.publishLearningState();
   }
   shutdown(): void {
+    this.game.events.off('request-pause',this.togglePause);
     this.game.events.off('learning:answer',this.submitLearningAnswer,this);
     this.game.events.off('learning:continue',this.continueAfterLearning,this);
     this.time.paused=false;this.anims.resumeAll();

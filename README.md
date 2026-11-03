@@ -2,6 +2,8 @@
 
 **Chơi ngay:** https://market-mayhem-hfuo.onrender.com · [Phạm vi bản phát hành và kiểm tra chơi thử](docs/PLAYTEST_RELEASE.md).
 
+**Cuộc đua điểm:** HUD hiện hạng, khoảng cách dẫn đầu và nguồn thu. Bốn khu xuất phát cùng 2 điểm/ô/giây; tài chính không lãi kép theo điểm. [Luật cân bằng và mô phỏng 8 phút](docs/ECONOMY_BALANCE.md).
+
 **Điều khiển:** WASD/mũi tên + giữ Space; điện thoại có phím hướng và nút CHẠY. Phaser chỉ tải khi vào trận. CI kiểm tra build, tests và container production trên mỗi lần push `main`.
 
 **Câu hỏi cạnh tranh:** ai trả lời và đọc giải thích xong được đi tiếp ngay. Người đang làm bài đứng yên và được bảo vệ khỏi bị cắt đuôi; bot/đối thủ và đồng hồ vẫn chạy. Popup giới thiệu vùng có trong cả local và online, không khóa di chuyển.

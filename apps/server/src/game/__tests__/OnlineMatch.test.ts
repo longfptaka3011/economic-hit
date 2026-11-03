@@ -57,6 +57,12 @@ describe('Authoritative online match',()=>{
     expect(match.finished).toBe(true);expect(match.remainingSeconds).toBe(0);
     expect(match.input('one',{sequence:1,dx:1,dy:0,sprint:true})).toBe(false);
   });
+  it('gives all four stationary spawn players equal final points, including unsettled finance income',()=>{
+    const match=new OnlineMatch([...members,{id:'four',nickname:'four',character:3,color:3,ready:true}]);
+    simulate(match,481);
+    const players=match.snapshot().players;
+    for(const player of players){expect(player.score).toBeCloseTo(24000,4);expect(player.economy.ratePerSecond).toBe(50);expect(player.economy.pendingInterest).toBe(0);}
+  });
   it('protects an exposed learner trail, prevents learner attacks and restores ordinary vulnerability on review',()=>{
     const match=new OnlineMatch(members);match.quiz.elapsedSeconds=60;match.step();
     const view=match.quiz.viewFor('one')!,a=match.actors.get('one')!,b=match.actors.get('two')!;
