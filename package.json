@@ -1,0 +1,29 @@
+{
+  "name": "market-mayhem",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@10.20.0",
+  "description": "Market Mayhem - 2D Top-down Multiplayer Territory-Control Party Game",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "pnpm --parallel run dev",
+    "dev:server": "pnpm --filter @market-mayhem/server dev",
+    "dev:client": "pnpm --filter @market-mayhem/client dev",
+    "build": "pnpm --filter @market-mayhem/shared build && pnpm --filter @market-mayhem/server build && pnpm --filter @market-mayhem/client build",
+    "build:shared": "pnpm --filter @market-mayhem/shared build",
+    "build:server": "pnpm --filter @market-mayhem/server build",
+    "build:client": "pnpm --filter @market-mayhem/client build",
+    "test": "vitest run --exclude '**/dist/**'",
+    "test:watch": "vitest --exclude '**/dist/**'",
+    "start:server": "pnpm --filter @market-mayhem/server start",
+    "start": "node apps/server/dist/server.js",
+    "preview:client": "pnpm --filter @market-mayhem/client preview"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5",
+    "vitest": "^5.0.5"
+  }
+}

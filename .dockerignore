@@ -1,0 +1,13 @@
+**/node_modules
+**/dist
+.tmp
+.git
+.codex
+.agents
+.aws
+.openai
+**/.env
+**/.env.*
+**/*.log
+docs
+artifacts
