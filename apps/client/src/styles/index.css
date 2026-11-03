@@ -77,6 +77,22 @@ kbd { border: 1px solid #637c68; border-bottom-width: 3px; padding: 2px 4px; col
 .footer-year { color: #4d705a; padding-left: 8px; }
 .game-viewport { position: fixed; inset: 0; background: #172b2a; overflow: hidden; }
 .game-viewport canvas { image-rendering: pixelated; }
+.touch-controls { display:none; }
+.touch-controls[hidden] { display:none !important; }
+.how-to-play { width:100%; max-width:1024px; margin:0 0 24px; border:2px solid #607b62; padding:16px; background:#152d24; color:#dbe5cd; font-size:13px; line-height:1.8; text-align:left; }
+.how-to-play summary { cursor:pointer; color:#edd38e; font-weight:700; }
+.how-to-play ol { list-style:decimal; padding-left:22px; margin:14px 0; }
+.how-to-play li { margin:8px 0; }
+.how-to-play p { color:#a9bba5; font-size:12px; margin:12px 0 0; }
+@media (max-width:900px), (pointer:coarse) {
+  .touch-controls { display:flex; position:absolute; z-index:40; bottom:max(12px,env(safe-area-inset-bottom)); left:max(14px,env(safe-area-inset-left)); right:max(14px,env(safe-area-inset-right)); justify-content:space-between; align-items:center; pointer-events:none; }
+  .touch-controls button { width:48px; height:48px; pointer-events:auto; touch-action:none; user-select:none; -webkit-user-select:none; background:#152d24ed; border:2px solid #91c1ae; color:#f4d985; box-shadow:3px 3px 0 #06140f; font:bold 17px monospace; }
+  .touch-controls button[aria-pressed=true] { background:#50694c; border-color:#ffe4a1; }
+  .touch-directions { display:grid; grid-template-columns:repeat(3,48px); grid-template-rows:repeat(2,48px); gap:5px; }
+  .touch-up { grid-column:2; }.touch-left { grid-column:1; grid-row:2; }.touch-down { grid-column:2; grid-row:2; }.touch-right { grid-column:3; grid-row:2; }
+  .touch-controls .touch-sprint { width:72px; height:72px; font-size:14px; }
+  .game-viewport .online-sprint,.game-viewport .online-minimap { bottom:140px; }
+}
 .game-loading { display: grid; place-items: center; height: 100%; color: #edd38e; font: 14px monospace; letter-spacing: 2px; }
 .online-shell { min-height: 100vh; display: grid; place-items: center; background: #172b2a; color: #e5e9d5; padding: 24px; }
 .online-card { width: min(100%, 650px); background: #20392f; border: 3px solid #a6ad7d; box-shadow: 8px 8px 0 #06140f; padding: 28px; }

@@ -2,8 +2,9 @@ import React, { useEffect, useRef, useState } from 'react';
 import { parseAvatarProfile, type AvatarProfile, type OnlineRoom, type OnlineSnapshot, type QuizView, type OnlineReply } from '@market-mayhem/shared';
 import { AvatarSetup, AvatarPreview, rememberAvatar } from '../components/AvatarSetup';
 import { socket } from '../networking/socket';
-import { PhaserGame } from '../game/PhaserGame';
+import { GameView as PhaserGame } from '../game/GameView';
 import { LearningOverlay } from '../game/ui/LearningOverlay';
+import { HowToPlay } from '../components/HowToPlay';
 
 function OnlineMiniMap({snapshot}:{snapshot:OnlineSnapshot}) {
   const ref=useRef<HTMLCanvasElement>(null);
@@ -77,7 +78,7 @@ export function OnlineLobby({initialMode,initialProfile,onExit}:{initialMode:'cr
         <div className="online-actions"><button className="pixel-button secondary" onClick={()=>document.fullscreenElement?document.exitFullscreen().catch(()=>{}):document.documentElement.requestFullscreen().catch(()=>{})}>Toàn màn hình</button><button className="pixel-button secondary" onClick={exit}>Rời trận</button></div>
         <ol>{[...snapshot.players].sort((a,b)=>b.score-a.score).map(p=><li key={p.id} style={{color:'#'+p.color.toString(16).padStart(6,'0')}}>{p.nickname}{p.id===socket.id?' (Bạn)':''} · {Math.floor(p.score)} đ · {(p.ownedCells/65536*100).toFixed(1)}%</li>)}</ol>
       </div>
-      {player && <div className="online-sprint"><strong>NỘ {Math.ceil(player.rage)}/100</strong><progress max={100} value={player.rage}/><span>{player.sprinting?'ĐANG TĂNG TỐC':'GIỮ SPACE + WASD ĐỂ CHẠY NHANH'}</span></div>}
+      {player && <div className="online-sprint"><strong>NỘ {Math.ceil(player.rage)}/100</strong><progress aria-label="Nộ của bạn" max={100} value={player.rage}/><span>{player.sprinting?'ĐANG TĂNG TỐC':'GIỮ SPACE / CHẠY ĐỂ TĂNG TỐC'}</span></div>}
       <OnlineMiniMap snapshot={snapshot}/>
       {error && <div className="online-error-toast" role="alert">{error}</div>}
       {quiz && !snapshot.finished && <LearningOverlay quiz={quiz} online readyCount={readyIds.length} waitingForGroup={readyIds.includes(socket.id!)}
@@ -103,6 +104,7 @@ export function OnlineLobby({initialMode,initialProfile,onExit}:{initialMode:'cr
       <div className="room-actions"><button className="pixel-button secondary" onClick={()=>socket.emit('online:ready',!me?.ready)}>{me?.ready?'HỦY SẴN SÀNG':'SẴN SÀNG'}</button>
         {host && <button className="pixel-button primary" disabled={room.members.length<2 || !room.members.every(m=>m.ready)} onClick={()=>socket.emit('online:start')}>BẮT ĐẦU</button>}</div>
       <p className="online-tip">Cả phòng tạm dừng ở trạm câu hỏi. Tất cả cần trả lời và xác nhận đọc xong để tiếp tục. Rời hoặc mất kết nối sẽ loại người chơi khỏi lượt hiện tại.</p>
+      <HowToPlay/>
     </>}
     {error && <p role="alert" className="online-error">{error}</p>}
     <button className="learning-exit" onClick={exit}>{room?'Rời phòng':'Về trang chủ'}</button>

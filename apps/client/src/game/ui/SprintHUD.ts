@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { SprintAbility, SPRINT_CONFIG } from '@market-mayhem/shared';
+import { needsTouchLayout } from './touchLayout';
 
 export class SprintHUD {
   private container: Phaser.GameObjects.Container;
@@ -21,7 +22,7 @@ export class SprintHUD {
 
   public onResize(width: number, height: number): void {
     this.width = Math.min(240, Math.max(180, width - 172));
-    this.container.setY(height - 136);
+    this.container.setY(height - (needsTouchLayout()?262:136));
   }
 
   public update(sprint: SprintAbility): void {
@@ -32,7 +33,7 @@ export class SprintHUD {
     const fill = Math.round((this.width - 24) * sprint.rage / SPRINT_CONFIG.maxRage);
     this.graphics.fillStyle(color).fillRect(12, 29, fill, 10);
     this.title.setText(`NỘ ${Math.ceil(sprint.rage)} / ${SPRINT_CONFIG.maxRage}${sprint.isSprinting ? '  +60%' : ''}`);
-    this.hint.setText(sprint.exhausted ? 'NHẢ SPACE · HỒI ÍT NHẤT 20 NỘ' : sprint.isSprinting ? 'ĐANG TĂNG TỐC · TIÊU HAO NỘ' : 'GIỮ SPACE ĐỂ TĂNG TỐC');
+    this.hint.setText(sprint.exhausted ? 'NHẢ NÚT CHẠY · HỒI 20 NỘ' : sprint.isSprinting ? 'ĐANG TĂNG TỐC · TIÊU HAO NỘ' : needsTouchLayout() ? 'GIỮ CHẠY ĐỂ TĂNG TỐC' : 'GIỮ SPACE ĐỂ TĂNG TỐC');
     this.hint.setFontSize(this.width < 220 ? 8 : 9);
   }
 

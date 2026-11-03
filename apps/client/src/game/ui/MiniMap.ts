@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { MAP_CONFIG } from '../config/map.config';
 import { TerritoryGrid } from '@market-mayhem/shared';
+import { needsTouchLayout } from './touchLayout';
 
 export class MiniMap {
   private scene: Phaser.Scene;
@@ -25,7 +26,7 @@ export class MiniMap {
     const screenW = this.scene.scale.width;
     const screenH = this.scene.scale.height;
     const posX = screenW - this.mapSize - 18;
-    const posY = screenH - this.mapSize - 18;
+    const posY = screenH - this.mapSize - (needsTouchLayout()?140:18);
 
     // Background panel
     const bg = this.scene.add.graphics();
@@ -106,7 +107,7 @@ export class MiniMap {
 
   public onResize(screenWidth: number, screenHeight: number): void {
     const posX = screenWidth - this.mapSize - 18;
-    const posY = screenHeight - this.mapSize - 18;
+    const posY = screenHeight - this.mapSize - (needsTouchLayout()?140:18);
     if (this.container) {
       this.container.setPosition(posX, posY);
     }

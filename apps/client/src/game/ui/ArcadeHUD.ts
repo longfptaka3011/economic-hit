@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { needsTouchLayout } from './touchLayout';
 import { EconomicScoreBreakdown } from '../systems/EconomicSystem';
 
 export interface LeaderboardEntry {
@@ -340,7 +341,7 @@ export class ArcadeHUD {
     const puW = 160;
     const puH = 44;
     const puX = 14;
-    const puY = height - puH - 14;
+    const puY = height - puH - (needsTouchLayout()?140:14);
     this.powerupBg.clear();
     this.powerupBg.fillStyle(0x020617, 0.5);
     this.powerupBg.fillRect(puX + 2, puY + 2, puW, puH);

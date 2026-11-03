@@ -1,17 +1,17 @@
 # Phase multiplayer: phòng, trận và Trạm tri thức chung
 
-> Bản mới đã rút còn 8 phút và thêm tạo nhân vật bắt buộc. Các mốc câu hỏi mới: 1:00, 2:30, 4:00, 5:30, 7:00. Triển khai production cùng origin và Render xem [DEPLOY_RENDER.md](DEPLOY_RENDER.md); các mốc 12 phút bên dưới là mô tả bản phase trước.
+> Bản hiện tại: 8 phút, tạo nhân vật bắt buộc, hỗ trợ nút cảm ứng. Chơi tại https://market-mayhem-hfuo.onrender.com. Xem [PLAYTEST_RELEASE.md](PLAYTEST_RELEASE.md) và [DEPLOY_RENDER.md](DEPLOY_RENDER.md).
 
 ## Chạy và chơi thử
 
 1. Chạy `pnpm build`, sau đó `pnpm start:server` và `pnpm dev:client` trong hai terminal. Có thể dùng `pnpm dev:server` khi môi trường hỗ trợ tsx watch.
 2. Mở client ở `http://localhost:5173`, chọn **Tạo phòng**, nhập tên. Mã phòng gồm sáu chữ số.
 3. Mở tab/trình duyệt thứ hai, chọn **Vào phòng**, nhập tên và mã phòng. Phòng hỗ trợ 2–4 người.
-4. Mọi người nhấn **Sẵn sàng**, chủ phòng nhấn **Bắt đầu**. WASD/mũi tên để di chuyển, giữ Space để tăng tốc và tiêu hao nộ; cuộn chuột đổi zoom.
-5. Phút 1, 3, 6, 9, 11 của thời gian chơi mở trạm câu hỏi chung. Mọi người trả lời, xem giải thích, rồi từng người nhấn tiếp tục. Chỉ khi cả phòng đã đọc xong, server mới cho trận chạy lại. Đáp án sai không khóa trận; trả lời đúng hồi tối đa 20 nộ.
-6. Hết 12 phút hoặc còn dưới hai người, trận kết thúc. Xếp hạng theo điểm kinh tế; chủ phòng có thể đưa cả phòng về lobby để chuẩn bị lượt mới.
+4. Mọi người nhấn **Sẵn sàng**, chủ phòng nhấn **Bắt đầu**. WASD/mũi tên để di chuyển, giữ Space để tăng tốc và tiêu hao nộ; cuộn chuột đổi zoom. Điện thoại dùng các nút hướng và giữ CHẠY, có thể giữ nhiều ngón cùng lúc.
+5. Các mốc 1:00, 2:30, 4:00, 5:30, 7:00 của thời gian chơi mở trạm câu hỏi chung. Mọi người trả lời, xem giải thích, rồi từng người nhấn tiếp tục. Chỉ khi cả phòng đã đọc xong, server mới cho trận chạy lại. Đáp án sai không khóa trận; trả lời đúng hồi tối đa 20 nộ.
+6. Hết 8 phút hoặc còn dưới hai người, trận kết thúc. Xếp hạng theo điểm kinh tế; chủ phòng có thể đưa cả phòng về lobby để chuẩn bị lượt mới.
 
-Mặc định client kết nối server `http://localhost:3001`. Với hai máy trong LAN, cấu hình `VITE_SERVER_URL` thành URL server mà cả hai máy truy cập được, chạy Vite với `--host 0.0.0.0` và cho phép cổng cần thiết trên máy chủ. Không tự công khai server ra Internet trong phase này.
+Khi phát triển, Vite proxy Socket.IO về `http://localhost:3001`, hoặc dùng `VITE_SERVER_URL`. Production luôn dùng cùng origin với trang web. Hướng dẫn Docker/Render nằm trong [DEPLOY_RENDER.md](DEPLOY_RENDER.md).
 
 ## Phân chia trách nhiệm
 
@@ -43,4 +43,4 @@ Mặc định client kết nối server `http://localhost:3001`. Với hai máy 
 
 ## Giới hạn của bản thử nghiệm
 
-Phòng và trạng thái chỉ lưu trong RAM một tiến trình. Restart server mất trận. Chưa có tài khoản, lưu lịch sử, khôi phục kết nối, ghép trận công khai, lưu thống kê học tập, điều khiển cảm ứng hoặc hạ tầng nhiều server. Toàn bộ ngân hàng câu hỏi vẫn có trong client phục vụ local; đây là hoạt động học tập, không phải hệ thống thi chống xem đáp án.
+Phòng và trạng thái chỉ lưu trong RAM một tiến trình. Restart server mất trận. Chưa có tài khoản, lưu lịch sử, khôi phục kết nối, ghép trận công khai, lưu thống kê học tập hoặc hạ tầng nhiều server. Toàn bộ ngân hàng câu hỏi vẫn có trong client phục vụ local; đây là hoạt động học tập, không phải hệ thống thi chống xem đáp án.

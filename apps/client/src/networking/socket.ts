@@ -7,18 +7,19 @@ const SERVER_URL = import.meta.env.PROD ? window.location.origin : (import.meta.
 export const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io(SERVER_URL, {
   autoConnect: true,
   reconnection: true,
-  reconnectionAttempts: 5,
+  reconnectionAttempts: Infinity,
   reconnectionDelay: 1000,
+  reconnectionDelayMax: 10000,
 });
 
-export function measurePing(): Promise<number> {
+export function measurePing(): Promise<number|null> {
   return new Promise((resolve) => {
     const start = performance.now();
-    socket.emit('game:ping', start);
-    socket.once('game:pong', () => {
-      const latency = Math.round(performance.now() - start);
-      resolve(latency);
-    });
+    const finish=(value:number|null)=>{clearTimeout(timer);socket.off('game:pong',pong);resolve(value);};
+    const pong=(timestamp:number)=>{if(timestamp===start)finish(Math.round(performance.now()-start));};
+    const timer=setTimeout(()=>finish(null),3000);
+    socket.on('game:pong',pong);
+    socket.emit('game:ping',start);
   });
 }
 

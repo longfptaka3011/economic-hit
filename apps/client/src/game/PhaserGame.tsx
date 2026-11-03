@@ -3,6 +3,7 @@ import Phaser from 'phaser';
 import { MainScene } from './scenes/MainScene';
 import { OnlineScene } from './scenes/OnlineScene';
 import { LearningOverlay } from './ui/LearningOverlay';
+import { TouchControls } from './ui/TouchControls';
 import type { QuizView, OnlineSnapshot, AvatarProfile } from '@market-mayhem/shared';
 
 interface PhaserGameProps {
@@ -16,6 +17,8 @@ export const PhaserGame:React.FC<PhaserGameProps>=({className='',onExitGame,onTo
   const gameRef=useRef<Phaser.Game|null>(null);
   const callbacks=useRef({onExitGame,onToggleFullscreen});callbacks.current={onExitGame,onToggleFullscreen};
   const [quiz,setQuiz]=useState<QuizView|null>(null);
+  const [controlsBlocked,setControlsBlocked]=useState(false);
+  const [resetVersion,setResetVersion]=useState(0);
   const [result,setResult]=useState<Array<{nickname:string;score:number;ownedCells:number}>|null>(null);
   const matchId=online?.snapshot.matchId;
   useEffect(()=>{
@@ -28,6 +31,9 @@ export const PhaserGame:React.FC<PhaserGameProps>=({className='',onExitGame,onTo
     gameRef.current=game;
     game.events.on('learning:state',setQuiz);
     game.events.on('local:finished',setResult);
+    const resetControls=()=>setResetVersion(value=>value+1);
+    game.events.on('controls:reset',resetControls);
+    game.events.on('controls:blocked',setControlsBlocked);
     game.events.on('request-fullscreen',()=>callbacks.current.onToggleFullscreen?.());
     game.events.on('request-exit-menu',()=>callbacks.current.onExitGame?.());
     return ()=>{game.events.off('learning:state',setQuiz);game.events.off('local:finished',setResult);game.events.removeAllListeners('request-fullscreen');game.events.removeAllListeners('request-exit-menu');game.destroy(true);gameRef.current=null;setQuiz(null);setResult(null);};
@@ -38,7 +44,10 @@ export const PhaserGame:React.FC<PhaserGameProps>=({className='',onExitGame,onTo
   useEffect(()=>{
     if(!online){const scene=gameRef.current?.scene.getScene('MainScene') as MainScene|undefined;scene?.setFullscreenState(isFullscreen);}
   },[isFullscreen]);
+  const blocked=controlsBlocked || !!quiz || !!result || !!online?.snapshot.paused || !!online?.snapshot.finished;
+  useEffect(()=>{gameRef.current?.events.emit('controls:reset');},[blocked]);
   return <><div ref={containerRef} className={'w-full h-full relative overflow-hidden select-none '+className}/>
+    <TouchControls disabled={blocked} resetVersion={resetVersion} onInput={input=>gameRef.current?.events.emit('controls:input',input)}/>
     {quiz && <LearningOverlay quiz={quiz} onAnswer={(round,index)=>gameRef.current?.events.emit('learning:answer',round,index)}
       onContinue={round=>gameRef.current?.events.emit('learning:continue',round)} onExit={()=>callbacks.current.onExitGame?.()}/>}
     {result && <div className="learning-backdrop"><section className="learning-panel" role="dialog" aria-modal="true" aria-labelledby="local-result-title"><div className="eyebrow">KẾT THÚC TRẬN · 8 PHÚT</div><h2 id="local-result-title">Tổng kết thị trường</h2><ol className="online-results">{result.map((player,index)=><li key={index}>#{index+1} {player.nickname} · {Math.floor(player.score)} đ · {player.ownedCells} ô</li>)}</ol><button className="pixel-button primary" onClick={()=>callbacks.current.onExitGame?.()}>VỀ TRANG CHỦ</button></section></div>}

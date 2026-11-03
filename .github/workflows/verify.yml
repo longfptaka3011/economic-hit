@@ -1,0 +1,46 @@
+name: Verify playable release
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.20.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm test
+      - run: docker build -t market-mayhem-ci .
+      - name: Smoke test production container
+        run: |
+          docker run --detach --name market-mayhem-ci -e PORT=10000 -p 10000:10000 market-mayhem-ci
+          node --input-type=module <<'NODE'
+          const base='http://127.0.0.1:10000';
+          let ready=false;
+          for(let attempt=0;attempt<30;attempt++){
+            try{
+              const health=await (await fetch(base+'/health')).json();
+              if(health.status==='ok'&&health.matchDurationSeconds===480){ready=true;break;}
+            }catch{}
+            await new Promise(resolve=>setTimeout(resolve,1000));
+          }
+          if(!ready)throw new Error('Production health check failed');
+          const html=await (await fetch(base)).text();
+          const asset=html.match(/src="([^"]+\.js)"/)?.[1];
+          if(!asset||!(await fetch(base+asset)).ok)throw new Error('Production client asset missing');
+          const image=await fetch(base+'/assets/tiles/urban_tiles.png');
+          if(!image.ok||!image.headers.get('content-type')?.includes('image/png'))throw new Error('Tileset missing');
+          console.log('Production container serves health, client and sprites');
+          NODE
+      - name: Container logs
+        if: always()
+        run: docker logs market-mayhem-ci || true

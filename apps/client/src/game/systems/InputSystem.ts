@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import type { TouchInput } from '../ui/TouchControls';
 
 export interface MovementInput {
   dx: number;
@@ -20,9 +21,15 @@ export class InputSystem {
   private escKey!: Phaser.Input.Keyboard.Key;
   private spaceKey!: Phaser.Input.Keyboard.Key;
   private onEscPressed?: () => void;
+  private touch:TouchInput={x:0,y:0,sprint:false};
+  private receiveTouch=(input:TouchInput)=>{this.touch=input;};
+  private clearInput=()=>{this.touch={x:0,y:0,sprint:false};this.scene.input.keyboard?.resetKeys();};
 
-  constructor(scene: Phaser.Scene, onEscPressed?: () => void) {
+  constructor(private scene: Phaser.Scene, onEscPressed?: () => void) {
     this.onEscPressed = onEscPressed;
+    scene.game.events.on('controls:input',this.receiveTouch);
+    scene.game.events.on('controls:reset',this.clearInput);
+    scene.game.events.on(Phaser.Core.Events.BLUR,this.clearInput);
     if (scene.input.keyboard) {
       this.cursors = scene.input.keyboard.createCursorKeys();
       this.wasdKeys = scene.input.keyboard.addKeys('W,A,S,D') as any;
@@ -38,8 +45,8 @@ export class InputSystem {
   }
 
   public getMovementInput(): MovementInput {
-    let rawX = 0;
-    let rawY = 0;
+    let rawX = this.touch.x;
+    let rawY = this.touch.y;
 
     // Horizontal input (A / Left / D / Right)
     if (this.wasdKeys?.A?.isDown || this.cursors?.left?.isDown) {
@@ -58,8 +65,8 @@ export class InputSystem {
     }
 
     // Diagonal Normalization: prevent moving 1.414x faster diagonally
-    let dx = rawX;
-    let dy = rawY;
+    let dx = Math.max(-1,Math.min(1,rawX));
+    let dy = Math.max(-1,Math.min(1,rawY));
     const length = Math.sqrt(dx * dx + dy * dy);
 
     if (length > 0) {
@@ -73,11 +80,14 @@ export class InputSystem {
       isMoving: length > 0,
       rawX,
       rawY,
-      sprint: this.spaceKey?.isDown ?? false,
+      sprint: !!this.spaceKey?.isDown || this.touch.sprint,
     };
   }
 
   public destroy(): void {
+    this.scene.game.events.off('controls:input',this.receiveTouch);
+    this.scene.game.events.off('controls:reset',this.clearInput);
+    this.scene.game.events.off(Phaser.Core.Events.BLUR,this.clearInput);
     if (this.escKey) {
       this.escKey.removeAllListeners();
     }

@@ -207,7 +207,7 @@ export class MainScene extends Phaser.Scene {
     }
 
     // 1. Update FPS Counter
-    // 1. Countdown Match Timer (12 minutes match)
+      // Countdown excludes quiz and manual pause time.
     this.matchRemainingSec = Math.max(0, this.matchRemainingSec - deltaSec);
     if(this.matchRemainingSec===0){
       this.matchEnded=true;this.input.keyboard?.resetKeys();this.tweens.pauseAll();this.anims.pauseAll();this.time.paused=true;

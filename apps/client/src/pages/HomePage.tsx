@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { socket, measurePing } from '../networking/socket';
-import { PhaserGame } from '../game/PhaserGame';
+import { GameView as PhaserGame } from '../game/GameView';
 import { OnlineLobby } from './OnlineLobby';
 import { AvatarSetup, loadAvatar, rememberAvatar } from '../components/AvatarSetup';
 import { parseAvatarProfile } from '@market-mayhem/shared';
+import { HowToPlay } from '../components/HowToPlay';
 import {
   Play,
   PlusCircle,
@@ -115,7 +116,7 @@ export const HomePage: React.FC = () => {
                 }`}
               />
               <span className="font-medium text-slate-300 hidden sm:inline">
-                {isConnected ? 'Server Connected' : 'Connecting to Server...'}
+                {isConnected ? 'Đã kết nối máy chủ' : 'Đang kết nối máy chủ…'}
               </span>
               {latency !== null && (
                 <span className="text-emerald-400 border-l border-slate-700 pl-2 font-mono font-semibold">
@@ -144,6 +145,7 @@ export const HomePage: React.FC = () => {
         <main className="max-w-6xl w-full mx-auto px-6 py-8 flex-1 flex flex-col items-center justify-center">
           <div className="w-full flex flex-col items-center">
             {/* Hero Section */}
+            {!isConnected && <p role="status" className="mb-4 text-sm text-amber-300 text-center">Máy chủ có thể cần một lúc để khởi động. Game sẽ tự kết nối lại; bạn vẫn có thể chơi thử với bot.</p>}
             <div className="text-center max-w-2xl mb-10">
               <div className="inline-flex items-center space-x-2 px-3.5 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-xs font-semibold mb-4">
                 <ShieldCheck className="w-4 h-4" />
@@ -186,6 +188,7 @@ export const HomePage: React.FC = () => {
               </button>
             </div>
 
+            <HowToPlay/>
             {/* Economic Zones Preview */}
             <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-5xl">
               <div className="p-4 rounded-xl bg-slate-900/60 border border-red-500/20 flex flex-col justify-between">

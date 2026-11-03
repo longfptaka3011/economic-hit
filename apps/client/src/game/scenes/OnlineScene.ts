@@ -46,6 +46,7 @@ export class OnlineScene extends Phaser.Scene {
   }
   private resize(size:Phaser.Structs.Size):void {this.cameraSystem.onResize(size.width,size.height);}
   private stopInput():void {
+    this.game.events.emit('controls:reset');
     this.input.keyboard?.resetKeys();
     socket.volatile.emit('online:input',this.snapshot.matchId,{sequence:++this.sequence,dx:0,dy:0,sprint:false});
   }

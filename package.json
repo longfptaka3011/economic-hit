@@ -16,8 +16,8 @@
     "build:shared": "pnpm --filter @market-mayhem/shared build",
     "build:server": "pnpm --filter @market-mayhem/server build",
     "build:client": "pnpm --filter @market-mayhem/client build",
-    "test": "vitest run --exclude '**/dist/**'",
-    "test:watch": "vitest --exclude '**/dist/**'",
+    "test": "vitest run --exclude '**/dist/**' --exclude '**/.tmp/**'",
+    "test:watch": "vitest --exclude '**/dist/**' --exclude '**/.tmp/**'",
     "start:server": "pnpm --filter @market-mayhem/server start",
     "start": "node apps/server/dist/server.js",
     "preview:client": "pnpm --filter @market-mayhem/client preview"

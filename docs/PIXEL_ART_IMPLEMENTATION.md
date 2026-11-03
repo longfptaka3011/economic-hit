@@ -2,6 +2,8 @@
 
 > Các mục local dưới đây ghi lại những phase trước. Phase mới đã nối phòng online, server điều khiển trận và quiz đồng bộ: xem [MULTIPLAYER.md](MULTIPLAYER.md).
 
+> Bản phát hành hiện tại đã có kết quả, điều khiển cảm ứng và Phaser tải khi vào trận; các mục chưa hoàn thành bên dưới là ghi chép lịch sử. Trạng thái hiện tại và giới hạn vận hành xem [PLAYTEST_RELEASE.md](PLAYTEST_RELEASE.md).
+
 ## Phạm vi
 
 Nâng cấp trang chủ và bản chơi local hiện có. Không thay đổi thuật toán capture, tọa độ thế giới, tốc độ di chuyển, AI hoặc giao thức server. Tạo/vào phòng trên trang chủ vẫn là thông báo tính năng chưa triển khai, không phải multiplayer hoàn chỉnh.

@@ -151,11 +151,15 @@ export class PauseOverlay {
   }
 
   public show(): void {
+    this.scene.game.events.emit('controls:reset');
+    this.scene.game.events.emit('controls:blocked',true);
     this.isVisible = true;
     this.container.setVisible(true);
   }
 
   public hide(): void {
+    this.scene.game.events.emit('controls:reset');
+    this.scene.game.events.emit('controls:blocked',false);
     this.isVisible = false;
     this.container.setVisible(false);
   }

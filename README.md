@@ -1,5 +1,9 @@
 # MARKET MAYHEM – CHIẾN TRƯỜNG THỊ TRƯỜNG
 
+**Chơi ngay:** https://market-mayhem-hfuo.onrender.com · [Phạm vi bản phát hành và kiểm tra chơi thử](docs/PLAYTEST_RELEASE.md).
+
+**Điều khiển:** WASD/mũi tên + giữ Space; điện thoại có phím hướng và nút CHẠY. Phaser chỉ tải khi vào trận. CI kiểm tra build, tests và container production trên mỗi lần push `main`.
+
 **Cập nhật:** đã có phòng online 2–4 người, server điều khiển trận đấu, tăng tốc bằng Space và trạm câu hỏi đồng bộ. Hướng dẫn chạy, chơi thử và các giới hạn xem [docs/MULTIPLAYER.md](docs/MULTIPLAYER.md). Các mục “Phase 1” bên dưới là ghi chép giai đoạn ban đầu.
 
 **Bản chơi thử:** trận 8 phút, bắt buộc đặt tên, 6 nhân vật và 8 màu để chọn. Docker/Render và cách phát hành xem [docs/DEPLOY_RENDER.md](docs/DEPLOY_RENDER.md).
