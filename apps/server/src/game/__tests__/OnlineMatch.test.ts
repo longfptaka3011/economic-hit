@@ -109,6 +109,9 @@ describe('Authoritative online match',()=>{
     match.step();expect(match.grid.getOwnerCellsCount('one')).toBeGreaterThan(25);
     expect(match.trails.hasTrail('one')).toBe(false);
     expect(match.revision).toBeGreaterThan(0);
+    const cells=match.grid.getOwnerCellsCount('one');expect(match.recorder.forPlayer('one')).toMatchObject({captures:1,capturedCells:cells-25,peakCells:cells});
+    expect(match.snapshot().events[0]).toMatchObject({type:'capture',actorId:'one',cells:cells-25});
+    const before=match.recorder.forPlayer('one');match.snapshot();match.snapshot();expect(match.recorder.forPlayer('one')).toEqual(before);
   });
   it('respawns a player whose exposed trail is cut, with protection and fresh rage',()=>{
     const match=new OnlineMatch(members);
@@ -120,5 +123,18 @@ describe('Authoritative online match',()=>{
     expect(victim.shield).toBe(3.5);expect(victim.sprint.rage).toBe(100);
     expect(match.trails.hasTrail('one')).toBe(false);
     expect(match.grid.getOwnerCellsCount('one')).toBe(25);
+    expect(match.recorder.forPlayer('one').deaths).toBe(1);expect(match.recorder.forPlayer('two').cuts).toBe(1);
+  });
+  it('credits a simultaneous cut once and returns consistent finished statistics without exposing live answer totals',()=>{
+    const match=new OnlineMatch(members),victim=match.actors.get('one')!;victim.shield=0;match.trails.addPoint('one',100,100);
+    for(const id of ['two','three']){match.actors.get(id)!.x=1608;match.actors.get(id)!.y=1608;}
+    match.step();expect(match.recorder.forPlayer('one').deaths).toBe(1);
+    expect(match.recorder.forPlayer('two').cuts+match.recorder.forPlayer('three').cuts).toBe(1);expect(match.snapshot().results).toBeUndefined();
+    match.quiz.elapsedSeconds=60;match.step();const view=match.quiz.viewFor('one')!,correct=correctFor(view.question.id);
+    expect(match.answer('one',view.roundId,correct)).toBe(true);expect(match.answer('one',view.roundId,correct)).toBe(false);
+    match.remainingSeconds=.001;match.step();const results=match.snapshot().results!;
+    const own=results.find(result=>result.id==='one')!;expect(own.stats).toMatchObject({questionsAnswered:1,questionsCorrect:1,deaths:1});
+    expect(own.income.totalProfit).toBe(own.score);expect(own.stats.peakCells).toBeGreaterThanOrEqual(own.ownedCells);
+    own.stats.questionsCorrect=999;expect(match.snapshot().results!.find(result=>result.id==='one')!.stats.questionsCorrect).toBe(1);
   });
 });

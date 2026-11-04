@@ -8,7 +8,7 @@ import { CameraSystem } from '../systems/CameraSystem';
 import { Player } from '../entities/Player';
 import { BotPlayer } from '../entities/BotPlayer';
 import { PauseOverlay } from '../ui/PauseOverlay';
-import { TerritoryGrid, TrailManager, TerritoryCaptureSystem, GAME_CONSTANTS, RaceQuizDirector, learningOutcome, racePoints,raceStandings, type AvatarProfile } from '@market-mayhem/shared';
+import { TerritoryGrid, TrailManager, TerritoryCaptureSystem, GAME_CONSTANTS, RaceQuizDirector, learningOutcome, racePoints,MatchRecorder, type AvatarProfile } from '@market-mayhem/shared';
 import { TerritoryRenderer } from '../rendering/TerritoryRenderer';
 import { ParticleEffects } from '../effects/ParticleEffects';
 import { NotificationManager } from '../ui/NotificationManager';
@@ -61,6 +61,7 @@ export class MainScene extends Phaser.Scene {
   private matchEnded=false;
   private lastClockSecond=-1;
   private lastRaceEmit=-Infinity;
+  private recorder=new MatchRecorder();
   private togglePause=()=>{if(!this.quizDirector.isLearning(this.player.id) && !this.matchEnded)this.pauseOverlay.toggle();};
 
   constructor(private avatar:AvatarProfile={nickname:'Nhà Tư Bản Trẻ',character:0,color:0x38bdf8}) {
@@ -78,6 +79,7 @@ export class MainScene extends Phaser.Scene {
     this.matchEnded=false;
     this.lastClockSecond=-1;
     this.lastRaceEmit=-Infinity;
+    this.recorder=new MatchRecorder();this.recorder.register('local_player');this.recorder.register('bot_player');
     this.game.events.on('request-pause',this.togglePause);
     this.quizDirector=new RaceQuizDirector(['local_player']);
     this.game.events.on('learning:answer',this.submitLearningAnswer,this);
@@ -219,10 +221,11 @@ export class MainScene extends Phaser.Scene {
       this.game.events.emit('learning:state',null);
       const competitors=[{id:this.player.id,nickname:this.avatar.nickname},{id:this.bot.id,nickname:'Tư Bản Robot'}].map(player=>({
         id:player.id,
-        nickname:player.nickname,score:this.economicSystem.getProfile(player.id).totalProfit,ownedCells:this.territoryGrid.getOwnerCellsCount(player.id)
+        nickname:player.nickname,color:player.id===this.player.id?this.avatar.color:0xf97316,isBot:player.id===this.bot.id,
+        score:this.economicSystem.getProfile(player.id).totalProfit,ownedCells:this.territoryGrid.getOwnerCellsCount(player.id),
+        stats:this.recorder.forPlayer(player.id),income:{...this.economicSystem.getProfile(player.id)}
       }));
-      const rankings=raceStandings(competitors).map(({player,rank})=>({...player,rank,score:racePoints(player.score)}));
-      this.game.events.emit('local:finished',rankings);return;
+      this.game.events.emit('local:finished',competitors);return;
     }
 
     // 2. Measure FPS
@@ -249,17 +252,20 @@ export class MainScene extends Phaser.Scene {
       // Back inside owned territory: complete trail if one exists!
       if (this.trailManager.hasTrail(this.player.id)) {
         const trail = this.trailManager.getTrail(this.player.id);
+        const before=this.territoryGrid.getOwnerCellsCount(this.player.id);
         const result = TerritoryCaptureSystem.capture(this.territoryGrid, this.player.id, trail);
         this.trailManager.clearTrail(this.player.id);
 
         if (result.success && result.totalCapturedCount > 0) {
+          this.recorder.capture(this.player.id,this.territoryGrid.getOwnerCellsCount(this.player.id)-before,this.player.x,this.player.y);
+          this.recorder.observe(this.player.id,this.territoryGrid.getOwnerCellsCount(this.player.id));this.publishFeedback();
           // Visual feedback
           // Visual feedback: flash captured area, paper confetti burst, toast
           this.territoryRenderer.triggerCaptureFlash(
             [...result.trailCells, ...result.enclosedCells],
-            0x0ea5e9
+            this.avatar.color
           );
-          this.particleEffects.emitCaptureBurst(this.player.x, this.player.y, 0x0ea5e9);
+          this.particleEffects.emitCaptureBurst(this.player.x, this.player.y, this.avatar.color,this.territoryGrid.getOwnerCellsCount(this.player.id)-before);
           this.territoryRenderer.renderTerritories();
 
           const newPercent = this.territoryGrid.getTerritoryPercentage(this.player.id);
@@ -275,13 +281,14 @@ export class MainScene extends Phaser.Scene {
 
     // 4. Update Bot Player
     // 5. Update Bot Player AI
-    this.bot.update(deltaSec, learning?[]:this.trailManager.getTrail(this.player.id), (botResult) => {
+    this.bot.update(deltaSec, learning?[]:this.trailManager.getTrail(this.player.id), (botResult,newCells) => {
       if (botResult && botResult.totalCapturedCount > 0) {
+        this.recorder.capture(this.bot.id,newCells,this.bot.x,this.bot.y);this.recorder.observe(this.bot.id,this.territoryGrid.getOwnerCellsCount(this.bot.id));this.publishFeedback();
         this.territoryRenderer.triggerCaptureFlash(
           [...botResult.trailCells, ...botResult.enclosedCells],
           0xf97316
         );
-        this.particleEffects.emitCaptureBurst(this.bot.x, this.bot.y, 0xf97316);
+        this.particleEffects.emitCaptureBurst(this.bot.x, this.bot.y, 0xf97316,newCells);
         this.territoryRenderer.renderTerritories();
       }
     });
@@ -338,9 +345,8 @@ export class MainScene extends Phaser.Scene {
     if (this.player.shieldTimeRemaining <= 0) {
       const botHitPlayer = this.trailManager.checkCollision(this.bot.id, this.bot.col, this.bot.row);
       if (botHitPlayer && botHitPlayer.hitPlayerId === this.player.id) {
-        this.particleEffects.emitEliminationParticles(this.player.x, this.player.y, 0x06b6d4);
-        this.particleEffects.emitEliminationParticles(this.player.x, this.player.y, 0x0ea5e9);
-        this.notificationManager.showAlert('⚠️ BOT ĐÃ CẮT VỆT ĐUÔI! BẠN BỊ HẠ GỤC VÀ ĐANG HỒI SINH...', true);
+        this.recorder.cut(this.bot.id,this.player.id,this.player.x,this.player.y);this.publishFeedback();
+        this.particleEffects.emitEliminationParticles(this.player.x, this.player.y, this.avatar.color);
         this.respawnPlayer();
         this.quizDirector.requestCrisis(this.player.id,'profit');
         return;
@@ -351,8 +357,8 @@ export class MainScene extends Phaser.Scene {
     if (this.bot.shieldTimeRemaining <= 0) {
       const playerHitBot = this.trailManager.checkCollision(this.player.id, pCol, pRow);
       if (playerHitBot && playerHitBot.hitPlayerId === this.bot.id) {
+        this.recorder.cut(this.player.id,this.bot.id,this.bot.x,this.bot.y);this.publishFeedback();
         this.particleEffects.emitEliminationParticles(this.bot.x, this.bot.y, 0xf97316);
-        this.notificationManager.showAlert('💥 BẠN ĐÃ CẮT ĐUÔI ROBOT! BOT ĐÃ BỊ HẠ GỤC!', false);
         this.respawnBot();
       }
     }
@@ -431,7 +437,11 @@ export class MainScene extends Phaser.Scene {
   }
 
   private publishLearningState():void {this.game.events.emit('learning:state',this.quizDirector.viewFor(this.player.id));}
-  private submitLearningAnswer(round:string,index:number):void {if(this.quizDirector.submit(round,this.player.id,index))this.publishLearningState();}
+  private publishFeedback():void {this.game.events.emit('match:feedback',this.recorder.recentEvents());}
+  private submitLearningAnswer(round:string,index:number):void {
+    if(this.matchEnded)return;
+    if(this.quizDirector.submit(round,this.player.id,index)){this.recorder.answer(this.player.id,this.quizDirector.viewFor(this.player.id)!.answer!.correct);this.publishLearningState();}
+  }
   private continueAfterLearning(round:string):void {
     if(this.matchEnded)return;
     const answer=this.quizDirector.finish(round,this.player.id);if(!answer)return;

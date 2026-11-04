@@ -13,6 +13,36 @@ const delay=(ms:number)=>new Promise(resolve=>setTimeout(resolve,ms));
 async function until(predicate:()=>boolean){for(let i=0;i<100;i++){if(predicate())return;await delay(10);}throw new Error('Socket event timeout');}
 
 describe('Online room Socket.IO transport',()=>{
+  it('requires fresh rematch consent and starts a clean match directly from results with the same room and avatars',async()=>{
+    const http=createServer(),io=new Server(http);let match:OnlineMatch|undefined;
+    const cleanup=setupOnline(io,members=>{match=new OnlineMatch(members);return match;});
+    await new Promise<void>(resolve=>http.listen(0,'127.0.0.1',resolve));const port=(http.address() as {port:number}).port;
+    const clients:any[]=[],states=new Map<any,any>();
+    const request=(client:any,event:string,...args:unknown[])=>new Promise<any>((resolve,reject)=>client.timeout(1000).emit(event,...args,(error:Error,result:unknown)=>error?reject(error):resolve(result)));
+    try{
+      for(let i=0;i<2;i++){
+        const client=connect(`http://127.0.0.1:${port}`,{transports:['websocket'],reconnection:false,forceNew:true}),state:any={};clients.push(client);states.set(client,state);
+        client.on('online:room',(room:unknown)=>state.room=room);client.on('online:started',(session:unknown)=>state.session=session);client.on('online:snapshot',(snapshot:unknown)=>state.snapshot=snapshot);client.on('online:quiz',(_id:string,quiz:unknown)=>state.quiz=quiz);
+        await new Promise<void>(resolve=>client.once('connect',resolve));
+      }
+      const [a,b]=clients,profile=(nickname:string,color:number)=>({nickname,character:4,color});
+      const room=(await request(a,'online:create',profile('Rematch A',0x38bdf8))).room;await request(b,'online:join',room.code,profile('Rematch B',0xfb923c));
+      clients.forEach(client=>client.emit('online:ready',true));await until(()=>states.get(a).room.members.every((member:any)=>member.ready));a.emit('online:start');await until(()=>!!states.get(a).session);
+      const oldId=match!.id;match!.quiz.elapsedSeconds=60;await until(()=>!!states.get(a).quiz);
+      const view=states.get(a).quiz,correct=LEARNING_QUESTIONS.find(question=>question.id===view.question.id)!.correctIndex;
+      a.emit('online:answer',oldId,view.roundId,correct);await until(()=>!!states.get(a).quiz.answer);match!.remainingSeconds=.001;
+      await until(()=>states.get(a).room.status==='finished');expect(states.get(a).room.members.every((member:any)=>!member.ready)).toBe(true);
+      expect(states.get(a).snapshot.results.find((result:any)=>result.id===a.id).stats.questionsCorrect).toBe(1);
+      a.emit('online:start');await delay(30);expect(match!.id).toBe(oldId);
+      a.emit('online:ready',true);await until(()=>states.get(a).room.members[0].ready);a.emit('online:start');await delay(30);expect(match!.id).toBe(oldId);
+      b.emit('online:ready',true);await until(()=>states.get(a).room.members.every((member:any)=>member.ready));a.emit('online:start');await until(()=>states.get(a).session.snapshot.matchId!==oldId);
+      expect(states.get(a).session.room.code).toBe(room.code);expect(states.get(a).session.snapshot.players[0].character).toBe(4);
+      expect(states.get(a).session.snapshot.players.every((player:any)=>player.score===0 && player.ownedCells===25)).toBe(true);
+      expect(states.get(a).session.snapshot.events).toEqual([]);expect(match!.recorder.forPlayer(a.id).questionsAnswered).toBe(0);
+      a.emit('online:answer',oldId,view.roundId,correct);a.emit('online:input',oldId,{sequence:99,dx:1,dy:0,sprint:true});await delay(30);
+      expect(match!.recorder.forPlayer(a.id).questionsAnswered).toBe(0);expect(match!.actors.get(a.id)!.sequence).toBe(-1);
+    }finally{clients.forEach(client=>client.disconnect());cleanup();await new Promise<void>(resolve=>io.close(()=>resolve()));}
+  });
   it('shares checkpoints while allowing each player to resume independently over real sockets',async()=>{
     const http=createServer();const io=new Server(http);let match:OnlineMatch|undefined;
     const cleanup=setupOnline(io,members=>{match=new OnlineMatch(members);return match;});

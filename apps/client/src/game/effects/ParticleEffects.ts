@@ -10,7 +10,8 @@ export class ParticleEffects {
   /**
    * Retro Pixel Art Confetti Burst on territory capture
    */
-  public emitCaptureBurst(x: number, y: number, primaryColor: number): void {
+  public emitCaptureBurst(x: number, y: number, primaryColor: number,capturedCells=0): void {
+    if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
     const confettiColors = [
       primaryColor,
       0xffffff,
@@ -19,7 +20,7 @@ export class ParticleEffects {
       0xf43f5e, // Coral pixel
       0x4ade80, // Lime pixel
     ];
-    const particleCount = 24;
+    const particleCount = capturedCells>=50?36:24;
 
     for (let i = 0; i < particleCount; i++) {
       const angle = (i / particleCount) * Math.PI * 2 + (Math.random() - 0.5) * 0.5;
@@ -58,6 +59,7 @@ export class ParticleEffects {
    * Retro Pixel Art Elimination explosion (pixel shockwave box and pixel fragments)
    */
   public emitEliminationBurst(x: number, y: number, color: number): void {
+    if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
     // 1. Expanding pixel shockwave box
     const box = this.scene.add.rectangle(x, y, 16, 16);
     box.setStrokeStyle(3, color, 0.95);

@@ -81,7 +81,7 @@ export class BotPlayer {
   public update(
     deltaSec: number,
     playerTrail: GridCoord[],
-    onCaptureCallback: (result: any) => void
+    onCaptureCallback: (result: any,newCells:number) => void
   ): void {
     if (!this.isAlive) return;
 
@@ -126,9 +126,10 @@ export class BotPlayer {
       // Inside owned territory: check if returning from trail
       if (this.trailManager.hasTrail(this.id)) {
         const trail = this.trailManager.getTrail(this.id);
+        const before=this.grid.getOwnerCellsCount(this.id);
         const result = TerritoryCaptureSystem.capture(this.grid, this.id, trail);
         this.trailManager.clearTrail(this.id);
-        onCaptureCallback(result);
+        onCaptureCallback(result,this.grid.getOwnerCellsCount(this.id)-before);
       }
     }
   }

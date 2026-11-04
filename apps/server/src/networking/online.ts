@@ -24,7 +24,7 @@ export function setupOnline(io: GameServer, createMatch: (members:OnlineMember[]
     io.to(channel(room.info.code)).emit('online:snapshot',match.snapshot(full || room.lastRevision!==match.revision));
     room.lastRevision=match.revision;
     if(match.quizVersion!==room.lastQuizVersion || match.finished)publishQuiz(room);
-    if(match.finished && room.info.status==='playing'){room.info.status='finished';publishRoom(room);}
+    if(match.finished && room.info.status==='playing'){room.info.status='finished';room.info.members.forEach(member=>member.ready=false);publishRoom(room);}
   };
   function leave(socket:GameSocket) {
     const room=roomFor(socket.id);membership.delete(socket.id);if(!room)return;
@@ -72,13 +72,13 @@ export function setupOnline(io: GameServer, createMatch: (members:OnlineMember[]
     });
     socket.on('disconnect',()=>leave(socket));
     socket.on('online:ready',ready=>{
-      const room=roomFor(socket.id);if(!room || room.info.status!=='lobby' || typeof ready!=='boolean')return;
+      const room=roomFor(socket.id);if(!room || (room.info.status!=='lobby' && room.info.status!=='finished') || typeof ready!=='boolean')return;
       room.info.members.find(m=>m.id===socket.id)!.ready=ready;publishRoom(room);
     });
     socket.on('online:start',()=>{
       const room=roomFor(socket.id);if(!room)return;
       if(room.info.hostId!==socket.id)return socket.emit('online:error','Chỉ chủ phòng được bắt đầu.');
-      if(room.info.status!=='lobby' || room.info.members.length<2 || !room.info.members.every(m=>m.ready))return socket.emit('online:error','Cần ít nhất 2 người và tất cả đã sẵn sàng.');
+      if((room.info.status!=='lobby' && room.info.status!=='finished') || room.info.members.length<2 || !room.info.members.every(m=>m.ready))return socket.emit('online:error','Cần ít nhất 2 người và tất cả đã sẵn sàng.');
       room.match=createMatch(room.info.members.map(member=>({...member})));
       room.info.status='playing';room.lastQuizVersion=-1;room.lastRevision=0;
       publishRoom(room);

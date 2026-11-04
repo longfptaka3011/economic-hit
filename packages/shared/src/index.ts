@@ -23,6 +23,7 @@ export * from './territory/TrailManager.js';
 export * from './abilities/SprintAbility.js';
 export * from './economy/EconomySystem.js';
 export * from './economy/raceStanding.js';
+export * from './match/MatchRecorder.js';
 
 // Learning checkpoints
 export * from './learning/questions.js';

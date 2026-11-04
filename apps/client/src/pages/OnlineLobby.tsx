@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { parseAvatarProfile,raceStandings,racePoints, type AvatarProfile, type OnlineRoom, type OnlineSnapshot, type QuizView, type OnlineReply } from '@market-mayhem/shared';
+import { parseAvatarProfile, type AvatarProfile, type OnlineRoom, type OnlineSnapshot, type QuizView, type OnlineReply } from '@market-mayhem/shared';
 import { AvatarSetup, AvatarPreview, rememberAvatar } from '../components/AvatarSetup';
 import { socket } from '../networking/socket';
 import { GameView as PhaserGame } from '../game/GameView';
 import { LearningOverlay } from '../game/ui/LearningOverlay';
 import { HowToPlay } from '../components/HowToPlay';
 import { RaceHUD } from '../game/ui/RaceHUD';
+import {MatchResults} from '../game/ui/MatchResults';
 
 function OnlineMiniMap({snapshot}:{snapshot:OnlineSnapshot}) {
   const ref=useRef<HTMLCanvasElement>(null);
@@ -81,11 +82,11 @@ export function OnlineLobby({initialMode,initialProfile,onExit}:{initialMode:'cr
       {quiz && !snapshot.finished && <LearningOverlay quiz={quiz} online remainingSeconds={snapshot.remainingSeconds}
         onAnswer={(round,index)=>socket.emit('online:answer',snapshot.matchId,round,index)}
         onContinue={round=>socket.emit('online:continue',snapshot.matchId,round)} onExit={exit}/>}
-      {snapshot.finished && <div className="learning-backdrop"><section className="learning-panel" role="dialog" aria-modal="true" aria-labelledby="result-title"><div className="eyebrow">KẾT THÚC TRẬN</div><h2 id="result-title">{snapshot.players.length<2?'Các đối thủ đã rời trận':'Hết thời gian · Tổng kết thị trường'}</h2>
-        <p>Thắng theo điểm kinh tế, không theo diện tích. Bằng điểm được đồng hạng.</p>
-        <ol className="online-results">{raceStandings(snapshot.players).map(({player:p,rank})=><li key={p.id}>#{rank} {p.nickname} · {racePoints(p.score).toLocaleString('vi-VN')} điểm · {p.ownedCells} ô</li>)}</ol>
-        {host?<button className="pixel-button primary" onClick={()=>socket.emit('online:lobby')}>VỀ PHÒNG CHỜ · CHƠI LƯỢT MỚI</button>:<p>Chờ chủ phòng mở lượt mới hoặc rời phòng.</p>}
-        <button className="learning-exit" onClick={exit}>Rời phòng</button></section></div>}
+      {snapshot.finished && <MatchResults results={snapshot.results??[]} playerId={socket.id!} reason={snapshot.players.length<2?'opponents-left':'time'} onExit={exit} actions={<>
+        <p>{room.members.filter(member=>member.ready).length}/{room.members.length} người sẵn sàng chơi lại · Giữ nguyên nhân vật và mã phòng.</p>
+        <button className="pixel-button secondary" onClick={()=>socket.emit('online:ready',!me?.ready)}>{me?.ready?'HỦY SẴN SÀNG':'SẴN SÀNG CHƠI LẠI'}</button>
+        {host && <><button className="pixel-button primary" disabled={room.members.length<2 || !room.members.every(member=>member.ready)} onClick={()=>socket.emit('online:start')}>CHƠI LẠI NGAY</button><button className="pixel-button secondary" onClick={()=>socket.emit('online:lobby')}>VỀ PHÒNG CHỜ · MỜI THÊM BẠN</button></>}
+      </>}/>}
     </div>;
   }
   return <main className="online-shell"><section className="online-card"><div className="eyebrow">MARKET MAYHEM · MULTIPLAYER</div>

@@ -1,5 +1,6 @@
 import React from 'react';
 import { CORE_DISTRICTS,DISTRICT_NAMES,economicZoneAt,racePoints,raceProgress,raceStandings,expansionAdvice,type EconomyStatus } from '@market-mayhem/shared';
+import {AudioToggle} from './AudioToggle';
 
 export interface RaceCompetitor { id:string;nickname:string;color:number;score:number;ownedCells:number;economy:EconomyStatus;learning?:boolean;shield?:number;x:number;y:number }
 export interface RaceView { players:RaceCompetitor[];remainingSeconds:number }
@@ -23,6 +24,6 @@ export function RaceHUD({players,playerId,remainingSeconds,heading,actions}:{pla
       <p>Lợi tức trả mỗi 2,5 giây, không lãi kép theo tổng điểm; tốc độ trên là trung bình. Thu phí đất chưa tính vào tốc độ. Ước tính mở rộng chưa tính khoảng cách và đối thủ.</p>
     </details>
     <details className="race-leaderboard"><summary>BẢNG ĐIỂM · {players.length} người</summary><ol>{standings.map(({player,rank})=><li key={player.id} style={{color:'#'+player.color.toString(16).padStart(6,'0')}}><span>#{rank} {player.nickname}{player.id===playerId?' (Bạn)':''}{player.learning?' 🛡':''}</span><strong>{number(player.score)} điểm</strong></li>)}</ol></details>
-    <div className="race-actions">{actions}</div>
+    <div className="race-actions">{actions}<AudioToggle/></div>
   </section>;
 }

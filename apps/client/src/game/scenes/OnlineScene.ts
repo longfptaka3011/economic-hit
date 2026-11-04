@@ -9,6 +9,7 @@ import { InputSystem } from '../systems/InputSystem';
 import { socket } from '../../networking/socket';
 import { RegionManager } from '../entities/RegionManager';
 import { DiscoveryPopup } from '../ui/DiscoveryPopup';
+import {ParticleEffects} from '../effects/ParticleEffects';
 
 /** Online scene displays server snapshots only; it never awards land or scores. */
 export class OnlineScene extends Phaser.Scene {
@@ -25,6 +26,8 @@ export class OnlineScene extends Phaser.Scene {
   private ready=false;
   private regions=new RegionManager();
   private discovery!:DiscoveryPopup;
+  private effects!:ParticleEffects;
+  private lastEffectId=0;
   constructor(private snapshot:OnlineSnapshot,private playerId:string){super({key:'OnlineScene'});}
 
   preload():void {
@@ -37,6 +40,7 @@ export class OnlineScene extends Phaser.Scene {
     this.cameraSystem=new CameraSystem(this);
     this.controls=new InputSystem(this);
     this.discovery=new DiscoveryPopup(this,340);
+    this.effects=new ParticleEffects(this);this.lastEffectId=Math.max(0,...this.snapshot.events.map(event=>event.id));
     this.ready=true;this.applySnapshot(this.snapshot);
     const local=this.renderers.get(this.playerId);
     if(local)this.cameraSystem.followTarget(local.getContainer());
@@ -81,6 +85,15 @@ export class OnlineScene extends Phaser.Scene {
       owners.forEach(owner=>this.grid.clearOwner(owner));
       snapshot.territory.forEach(cell=>this.grid.setOwner(cell.col,cell.row,cell.owner));
       this.revision=snapshot.territoryRevision;this.territory.renderTerritories();
+    }
+    for(const event of snapshot.events){
+      if(event.id<=this.lastEffectId)continue;
+      if(this.cameras.main.worldView.contains(event.x,event.y)){
+        const actor=snapshot.players.find(player=>player.id===(event.type==='cut'?event.victimId:event.actorId));
+        if(event.type==='capture')this.effects.emitCaptureBurst(event.x,event.y,actor?.color??0x38bdf8,event.cells);
+        else this.effects.emitEliminationBurst(event.x,event.y,actor?.color??0xfb923c);
+      }
+      this.lastEffectId=Math.max(this.lastEffectId,event.id);
     }
   }
   update(_time:number,delta:number):void {

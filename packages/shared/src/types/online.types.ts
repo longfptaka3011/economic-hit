@@ -1,6 +1,7 @@
 import type { QuizView } from '../learning/QuizDirector.js';
 import type { AvatarProfile } from './avatar.types.js';
 import type { EconomyStatus } from '../economy/EconomySystem.js';
+import type { MatchFeedbackEvent,MatchResult } from '../match/MatchRecorder.js';
 
 export const ONLINE_COLORS = [0x38bdf8, 0xfb923c, 0xa3e635, 0xe879f9] as const;
 export interface OnlineMember extends AvatarProfile { id: string; ready: boolean }
@@ -19,6 +20,8 @@ export interface OnlineSnapshot {
   players: OnlinePlayer[]; trails: Record<string, Array<{col: number; row: number}>>;
   territoryRevision: number;
   territory?: Array<{ col: number; row: number; owner: string }>;
+  events:MatchFeedbackEvent[];
+  results?:MatchResult[];
 }
 export interface OnlineSession { room: OnlineRoom; snapshot: OnlineSnapshot }
 export type OnlineReply = { success: boolean; error?: string; room?: OnlineRoom };

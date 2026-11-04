@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { RaceQuizDirector, SprintAbility, TerritoryGrid, TrailManager, TerritoryCaptureSystem, GAME_CONSTANTS, EconomySystem,learningOutcome,
+import { RaceQuizDirector, SprintAbility, TerritoryGrid, TrailManager, TerritoryCaptureSystem, GAME_CONSTANTS, EconomySystem,learningOutcome,MatchRecorder,
   type OnlineMember, type OnlineInput, type OnlineSnapshot, type OnlinePlayer } from '@market-mayhem/shared';
 
 const SPAWNS = [{col:64,row:64},{col:190,row:64},{col:64,row:190},{col:190,row:190}];
@@ -16,6 +16,7 @@ export class OnlineMatch {
   readonly grid = new TerritoryGrid(256, 256);
   readonly trails = new TrailManager();
   readonly economy=new EconomySystem(this.grid);
+  readonly recorder=new MatchRecorder();
   readonly quiz: RaceQuizDirector;
   readonly actors = new Map<string, Actor>();
   remainingSeconds: number = GAME_CONSTANTS.MATCH_DURATION_SECONDS;
@@ -33,6 +34,7 @@ export class OnlineMatch {
       this.actors.set(member.id, { member, spawn, x: spawn.col*16+8, y: spawn.row*16+8, vx:0, vy:0,
         sprint: new SprintAbility(), shield:3.5, get score(){return economy.getProfile(member.id).totalProfit;}, input:STOP, inputAge:0, sequence:-1 });
       this.grid.spawnTerritory(member.id, spawn.col, spawn.row, 2);
+      this.recorder.register(member.id,this.grid.getOwnerCellsCount(member.id));
     });
   }
 
@@ -55,6 +57,7 @@ export class OnlineMatch {
   answer(playerId: string, roundId: string, option: number): boolean {
     if(this.finished)return false;
     if (!this.quiz.submit(roundId, playerId, option)) return false;
+    this.recorder.answer(playerId,this.quiz.viewFor(playerId)!.answer!.correct);
     this.quizVersion++;
     return true;
   }
@@ -113,19 +116,22 @@ export class OnlineMatch {
       actor.y = Math.max(14, Math.min(4082, actor.y + actor.vy*dt));
     }
     // Determine simultaneous cuts before captures can remove a vulnerable trail.
-    const victims = new Set<string>();
+    const victims = new Map<string,string>();
     for (const [id,actor] of this.actors) {
       if(this.quiz.isLearning(id))continue;
       const hit = this.trails.checkCollision(id,Math.floor(actor.x/16),Math.floor(actor.y/16));
-      if (hit && !this.quiz.isLearning(hit.hitPlayerId) && this.actors.get(hit.hitPlayerId)!.shield <= 0) victims.add(hit.hitPlayerId);
+      if (hit && !this.quiz.isLearning(hit.hitPlayerId) && this.actors.get(hit.hitPlayerId)!.shield <= 0 && !victims.has(hit.hitPlayerId))victims.set(hit.hitPlayerId,id);
     }
-    for (const id of victims) this.respawn(id,this.actors.get(id)!);
+    for (const [id,attacker] of victims){const victim=this.actors.get(id)!;this.recorder.cut(attacker,id,victim.x,victim.y);this.respawn(id,victim);}
     for (const [id,actor] of this.actors) {
       if (victims.has(id) || this.quiz.isLearning(id)) continue;
       const col=Math.floor(actor.x/16), row=Math.floor(actor.y/16);
       if (this.grid.getOwner(col,row) !== id) this.trails.addPoint(id,col,row);
       else if (this.trails.hasTrail(id)) {
+        const before=this.grid.getOwnerCellsCount(id);
         TerritoryCaptureSystem.capture(this.grid,id,this.trails.getTrail(id));
+        this.recorder.capture(id,this.grid.getOwnerCellsCount(id)-before,actor.x,actor.y);
+        this.recorder.observe(id,this.grid.getOwnerCellsCount(id));
         this.trails.clearTrail(id); this.revision++;
       }
       const owner=this.grid.getOwner(col,row);
@@ -144,6 +150,8 @@ export class OnlineMatch {
     if(includeTerritory)for(const id of this.actors.keys())for(const cell of this.grid.getAllOwnedCells(id))territory.push({...cell,owner:id});
     return {matchId:this.id,tick:this.tick,remainingSeconds:this.remainingSeconds,paused:false,
       finished:this.finished,players,trails:Object.fromEntries([...this.actors.keys()].map(id=>[id,this.trails.getTrail(id)])),
-      territoryRevision:this.revision,...(includeTerritory?{territory}:{})};
+      territoryRevision:this.revision,events:this.recorder.recentEvents(),
+      ...(this.finished?{results:players.map(player=>({id:player.id,nickname:player.nickname,color:player.color,score:player.score,ownedCells:player.ownedCells,stats:this.recorder.forPlayer(player.id),income:{...this.economy.getProfile(player.id)}}))}:{}),
+      ...(includeTerritory?{territory}:{})};
   }
 }
