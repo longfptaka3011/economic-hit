@@ -1,11 +1,11 @@
 import { randomInt } from 'node:crypto';
 import type { Server, Socket } from 'socket.io';
-import { parseAvatarProfile, type ClientToServerEvents, type ServerToClientEvents, type OnlineRoom, type OnlineMember } from '@market-mayhem/shared';
+import { GAME_CONSTANTS,parseAvatarProfile, type ClientToServerEvents, type ServerToClientEvents, type OnlineRoom, type OnlineMember } from '@market-mayhem/shared';
 import { OnlineMatch } from '../game/OnlineMatch.js';
 
 type GameServer = Server<ClientToServerEvents,ServerToClientEvents>;
 type GameSocket = Socket<ClientToServerEvents,ServerToClientEvents>;
-interface Room { info: OnlineRoom; match?: OnlineMatch; lastRevision: number; lastQuizVersion: number }
+interface Room { info: OnlineRoom; match?: OnlineMatch; lastGridRevision: number; lastQuizVersion: number }
 
 export function setupOnline(io: GameServer, createMatch: (members:OnlineMember[])=>OnlineMatch = members=>new OnlineMatch(members)): () => void {
   const rooms = new Map<string, Room>();
@@ -21,8 +21,8 @@ export function setupOnline(io: GameServer, createMatch: (members:OnlineMember[]
   };
   const publishSnapshot = (room:Room,full=false) => {
     const match=room.match;if(!match)return;
-    io.to(channel(room.info.code)).emit('online:snapshot',match.snapshot(full || room.lastRevision!==match.revision));
-    room.lastRevision=match.revision;
+    io.to(channel(room.info.code)).emit('online:snapshot',match.snapshot(full,room.lastGridRevision));
+    room.lastGridRevision=match.grid.revision;
     if(match.quizVersion!==room.lastQuizVersion || match.finished)publishQuiz(room);
     if(match.finished && room.info.status==='playing'){room.info.status='finished';room.info.members.forEach(member=>member.ready=false);publishRoom(room);}
   };
@@ -42,7 +42,7 @@ export function setupOnline(io: GameServer, createMatch: (members:OnlineMember[]
       if(membership.has(socket.id))return reply({success:false,error:'Hãy rời phòng hiện tại trước.'});
       const profile=parseAvatarProfile(value);if(!profile)return reply({success:false,error:'Tên cần 2–24 ký tự, nhân vật và màu phải hợp lệ.'});
       let code:string;do{code=randomInt(100000,1000000).toString();}while(rooms.has(code));
-      const room:Room={info:{code,hostId:socket.id,status:'lobby',members:[{id:socket.id,...profile,ready:false}]},lastRevision:-1,lastQuizVersion:-1};
+      const room:Room={info:{code,hostId:socket.id,status:'lobby',members:[{id:socket.id,...profile,ready:false}]},lastGridRevision:-1,lastQuizVersion:-1};
       rooms.set(code,room);membership.set(socket.id,code);void socket.join(channel(code));
       reply({success:true,room:room.info});publishRoom(room);
     });
@@ -53,7 +53,7 @@ export function setupOnline(io: GameServer, createMatch: (members:OnlineMember[]
       const room=typeof code==='string'?rooms.get(code.trim()):undefined;
       if(!room)return fail('Không tìm thấy phòng.');
       if(room.info.status!=='lobby')return fail('Phòng đang chơi. Hãy chờ chủ phòng mở lượt mới.');
-      if(room.info.members.length>=4)return fail('Phòng đã đủ 4 người.');
+      if(room.info.members.length>=GAME_CONSTANTS.MAX_PLAYERS)return fail(`Phòng đã đủ ${GAME_CONSTANTS.MAX_PLAYERS} người.`);
       const profile=parseAvatarProfile(value);if(!profile)return fail('Tên cần 2–24 ký tự, nhân vật và màu phải hợp lệ.');
       if(room.info.members.some(member=>member.color===profile.color))return fail('Màu này đã có người chọn trong phòng. Hãy chọn màu khác.');
       room.info.members.push({id:socket.id,...profile,ready:false});
@@ -80,7 +80,7 @@ export function setupOnline(io: GameServer, createMatch: (members:OnlineMember[]
       if(room.info.hostId!==socket.id)return socket.emit('online:error','Chỉ chủ phòng được bắt đầu.');
       if((room.info.status!=='lobby' && room.info.status!=='finished') || room.info.members.length<2 || !room.info.members.every(m=>m.ready))return socket.emit('online:error','Cần ít nhất 2 người và tất cả đã sẵn sàng.');
       room.match=createMatch(room.info.members.map(member=>({...member})));
-      room.info.status='playing';room.lastQuizVersion=-1;room.lastRevision=0;
+      room.info.status='playing';room.lastQuizVersion=-1;room.lastGridRevision=room.match.grid.revision;
       publishRoom(room);
       io.to(channel(room.info.code)).emit('online:started',{room:room.info,snapshot:room.match.snapshot(true)});
       publishQuiz(room);

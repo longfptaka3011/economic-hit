@@ -12,6 +12,25 @@
 }
 
 :root { color-scheme: dark; }
+.race-hud.race-compact { width:min(310px,calc(100% - 24px)); padding:9px 11px; max-height:220px; }
+.race-hud.race-expanded { width:min(370px,calc(100% - 24px)); padding:10px 12px; max-height:min(65vh,560px); }
+.race-hud .race-heading { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; flex:1; font-size:9px; }
+.race-hud .race-topline { gap:9px; }
+.race-hud .race-topline strong { flex-shrink:0; font-size:13px; }
+.race-detail-toggle { flex-shrink:0; border:1px solid #708b69; background:#2b4433; color:#efd69b; padding:4px 7px; font-size:10px; cursor:pointer; min-height:28px; }
+.race-hud.race-compact .race-score { font-size:18px; }.race-hud.race-compact .race-rank { font-size:12px; }
+.race-compact-summary { font-size:11px; color:#bfd5b6; margin:4px 0 6px; }
+.race-hud .race-actions { gap:6px; }.race-hud .race-actions button { font-size:10px; min-height:30px; padding:4px 8px; }
+.race-details[hidden] { display:none; }
+.practice-results .result-stats { grid-template-columns:repeat(2,minmax(0,1fr)); }
+@media(max-width:600px){.race-hud.race-compact { width:min(290px,calc(100% - 24px)); padding:8px 10px; }.race-hud.race-expanded { max-height:55vh; }.race-hud .race-actions button { min-height:36px; }}
+.lobby-shell .lobby-crowded .online-members { grid-template-columns:repeat(5,minmax(0,1fr)); }
+.lobby-shell .lobby-crowded .lobby-roster li { min-height:160px; gap:8px; padding:12px 6px; }
+.lobby-crowded .lobby-player-portrait { height:56px; width:64px; }
+.lobby-crowded .room-actions { position:sticky; top:10px; z-index:5; padding:10px; background:#1e382ff5; border:1px solid #81976b; box-shadow:0 4px 0 #10251f; }
+.lobby-overflow { position:absolute; bottom:18%; right:3%; padding:4px 7px; background:#183127ed; color:#f6db96; font-size:10px; border:1px solid #b9bd86; }
+@media(max-width:900px){.lobby-shell .lobby-crowded .online-members { grid-template-columns:repeat(3,minmax(0,1fr)); }}
+@media(max-width:600px){.lobby-shell .lobby-crowded .online-members { grid-template-columns:repeat(2,minmax(0,1fr)); }}
 /* Arrival square: same palette and integer-scaled sprites as the game. */
 .lobby-shell { padding:40px 24px; background-color:#112722; background-image:linear-gradient(#bcd8aa06 1px,transparent 1px),linear-gradient(90deg,#bcd8aa06 1px,transparent 1px); background-size:32px 32px; }
 .lobby-layout { width:min(100%,1080px); min-width:0; }

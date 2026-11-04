@@ -1,11 +1,40 @@
 import { describe, expect, it } from 'vitest';
 import { OnlineMatch } from '../OnlineMatch.js';
-import { LEARNING_QUESTIONS, LEARNING_STAGES } from '@market-mayhem/shared';
+import { LEARNING_QUESTIONS, LEARNING_STAGES,AVATAR_COLORS,GAME_CONSTANTS,expandCompactTrail } from '@market-mayhem/shared';
 
 const members = ['one','two','three'].map((id,i)=>({id,nickname:id,character:i,color:i,ready:true}));
 const simulate=(match:OnlineMatch,seconds:number)=>{for(let i=0;i<Math.round(seconds*60);i++)match.step();};
 const correctFor=(id:string)=>LEARNING_QUESTIONS.find(question=>question.id===id)!.correctIndex;
 describe('Authoritative online match',()=>{
+  it('supports fifteen distinct, separated, equally funded spawns and ten independent answers each',()=>{
+    const crowd=Array.from({length:15},(_,i)=>({id:'crowd-'+i,nickname:'Player '+i,character:i%6,color:AVATAR_COLORS[i],ready:true}));
+    expect(AVATAR_COLORS.length).toBeGreaterThanOrEqual(GAME_CONSTANTS.MAX_PLAYERS);
+    const match=new OnlineMatch(crowd),actors=[...match.actors.values()];
+    expect(new Set(actors.map(a=>`${a.x},${a.y}`)).size).toBe(15);
+    for(const a of actors){
+      expect(match.grid.getOwnerCellsCount(a.member.id)).toBe(25);expect(match.economy.getStatus(a.member.id).ratePerSecond).toBe(50);
+      expect(Math.hypot(a.spawn.col-127.5,a.spawn.row-127.5)).toBeCloseTo(90,0);
+      for(const b of actors)if(a!==b)expect(Math.hypot(a.spawn.col-b.spawn.col,a.spawn.row-b.spawn.row)).toBeGreaterThan(30);
+    }
+    let elapsed=0;
+    for(const stage of LEARNING_STAGES){
+      simulate(match,stage.atSeconds-elapsed+.02);elapsed=stage.atSeconds+.02;
+      const first=match.quiz.viewFor(crowd[0].id)!;
+      for(const member of crowd){
+        expect(match.quiz.viewFor(member.id)?.question.id).toBe(first.question.id);
+        expect(match.answer(member.id,first.roundId,correctFor(first.question.id))).toBe(true);
+        expect(match.continue(member.id,first.roundId)).toBe(true);
+      }
+    }
+    simulate(match,61);expect(match.finished).toBe(true);
+    for(const member of crowd){expect(match.recorder.forPlayer(member.id).questionsAnswered).toBe(10);expect(match.actors.get(member.id)!.score).toBeCloseTo(24000,4);}
+    expect(()=>new OnlineMatch([...crowd,{...crowd[0],id:'overflow'}])).toThrow('Too many');
+  });
+  it('sends compact trails that expand to the authoritative collision path',()=>{
+    const match=new OnlineMatch(members);for(let col=50;col<100;col++)match.trails.addPoint('one',col,100);
+    const snapshot=match.snapshot();expect(snapshot.trailsCompressed).toBe(true);expect(snapshot.trails.one).toHaveLength(2);
+    expect(expandCompactTrail(snapshot.trails.one)).toEqual(match.trails.getTrail('one'));expect(snapshot.trailVersions?.one).toBeGreaterThan(0);
+  });
   it('acknowledges normalized input and publishes sprint state without trusting client positions',()=>{
     const match=new OnlineMatch(members);
     match.input('one',{sequence:42,dx:1,dy:1,sprint:true});match.step();

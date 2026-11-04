@@ -1,5 +1,5 @@
 import React, {useEffect, useRef} from 'react';
-import type {AvatarProfile} from '@market-mayhem/shared';
+import {GAME_CONSTANTS,type AvatarProfile} from '@market-mayhem/shared';
 import {AvatarPreview} from './AvatarSetup';
 
 /** A small, static city diorama using the same CC0 Urban tiles as the game. */
@@ -46,6 +46,7 @@ export function LobbyCity({players}:{players:readonly AvatarProfile[]}) {
     <div className="lobby-platforms">{Array.from({length:4},(_,index)=><div key={index} className={players[index]?'occupied':''}>
       {players[index]?<AvatarPreview {...players[index]} size={64}/>:<span className="lobby-ghost">?</span>}
     </div>)}</div>
-    <span className="lobby-city-caption">{players.length}/4 NHÀ KINH DOANH ĐÃ CÓ MẶT</span>
+    {players.length>4 && <span className="lobby-overflow">+{players.length-4} người chơi khác</span>}
+    <span className="lobby-city-caption">{players.length}/{GAME_CONSTANTS.MAX_PLAYERS} NHÀ KINH DOANH ĐÃ CÓ MẶT</span>
   </div>;
 }

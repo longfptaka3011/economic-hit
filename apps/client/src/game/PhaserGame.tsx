@@ -52,18 +52,15 @@ export const PhaserGame:React.FC<PhaserGameProps>=({className='',onExitGame,onTo
   useEffect(()=>{
     if(online){const scene=gameRef.current?.scene.getScene('OnlineScene') as OnlineScene|undefined;scene?.applySnapshot(online.snapshot);}
   },[online?.snapshot]);
-  useEffect(()=>{
-    if(!online){const scene=gameRef.current?.scene.getScene('MainScene') as MainScene|undefined;scene?.setFullscreenState(isFullscreen);}
-  },[isFullscreen]);
   const blocked=controlsBlocked || !!quiz || !!result || !!online?.snapshot.paused || !!online?.snapshot.finished || !!online?.snapshot.players.find(player=>player.id===online.playerId)?.learning;
   useEffect(()=>{gameRef.current?.events.emit('controls:reset');},[blocked]);
   return <><div ref={containerRef} className={'w-full h-full relative overflow-hidden select-none '+className}/>
-    {!online && race && !controlsBlocked && <RaceHUD {...race} playerId="local_player" heading="LOCAL · CUỘC ĐUA KINH TẾ" actions={<><button onClick={()=>gameRef.current?.events.emit('request-pause')}>Menu</button><button onClick={()=>callbacks.current.onToggleFullscreen?.()}>Toàn màn hình</button></>}/>}
+    {!online && race && !controlsBlocked && <RaceHUD {...race} playerId="local_player" heading="LUYỆN TẬP · MỘT NGƯỜI" actions={<><button onClick={()=>gameRef.current?.events.emit('request-pause')}>Menu</button><button onClick={()=>callbacks.current.onToggleFullscreen?.()}>{isFullscreen?'Thoát toàn màn hình':'Toàn màn hình'}</button></>}/>}
     <TouchControls disabled={blocked} resetVersion={resetVersion} onInput={input=>gameRef.current?.events.emit('controls:input',input)}/>
     <GameplayFeedback key={matchId??'local-'+localRound} events={online?.snapshot.events??feedback} players={online?.snapshot.players??race?.players??[]} playerId={online?.playerId??'local_player'} finished={online?.snapshot.finished??!!result}/>
     {quiz && <LearningOverlay quiz={quiz} remainingSeconds={remainingSeconds} onAnswer={(round,index)=>gameRef.current?.events.emit('learning:answer',round,index)}
       onContinue={round=>gameRef.current?.events.emit('learning:continue',round)} onExit={()=>callbacks.current.onExitGame?.()}/>}
-    {result && <MatchResults results={result} playerId="local_player" onExit={()=>callbacks.current.onExitGame?.()} actions={<button className="pixel-button primary" onClick={()=>{
+    {result && <MatchResults practice results={result} playerId="local_player" onExit={()=>callbacks.current.onExitGame?.()} actions={<button className="pixel-button primary" onClick={()=>{
       setResult(null);setQuiz(null);setRace(null);setFeedback([]);setControlsBlocked(false);setLocalRound(round=>round+1);
       gameRef.current?.scene.getScene('MainScene').scene.restart();
     }}>CHƠI LẠI NGAY · GIỮ NHÂN VẬT</button>}/>}

@@ -136,6 +136,8 @@ export class TerritoryRenderer {
     const tileSize = MAP_CONFIG.tileSize;
     const pixelBlockSize = 12;
     const offset = (tileSize - pixelBlockSize) / 2;
+    const view=this.scene.cameras.main.worldView;
+    const visible=(col:number,row:number)=>col*tileSize>=view.left-tileSize && col*tileSize<=view.right+tileSize && row*tileSize>=view.top-tileSize && row*tileSize<=view.bottom+tileSize;
 
     for (const [playerId, visual] of this.playerVisuals.entries()) {
       const trail = this.trailManager.getTrail(playerId);
@@ -144,6 +146,7 @@ export class TerritoryRenderer {
       // 1. Trail Drop Shadow
       this.trailShadowGraphics.fillStyle(0x020617, 0.3);
       for (const pt of trail) {
+        if(!visible(pt.col,pt.row))continue;
         const px = pt.col * tileSize + offset;
         const py = pt.row * tileSize + offset + 2;
         this.trailShadowGraphics.fillRect(px, py, pixelBlockSize, pixelBlockSize);
@@ -152,6 +155,7 @@ export class TerritoryRenderer {
       // 2. Main Pixel Ribbon Trail
       for (let i = 0; i < trail.length; i++) {
         const pt = trail[i];
+        if(!visible(pt.col,pt.row))continue;
         const px = pt.col * tileSize + offset;
         const py = pt.row * tileSize + offset;
 

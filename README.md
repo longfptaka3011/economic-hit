@@ -2,6 +2,8 @@
 
 **Chơi ngay:** https://market-mayhem-hfuo.onrender.com · [Phạm vi bản phát hành và kiểm tra chơi thử](docs/PLAYTEST_RELEASE.md).
 
+**Bản nộp:** [Hướng dẫn chạy và kịch bản trình bày](docs/SUBMISSION.md). Chơi thử là luyện tập một mình, không có bot. Thi đấu online hỗ trợ 2–15 người. HUD mặc định nhỏ gọn, mở thêm bằng nút **Chi tiết**; câu hỏi chỉ chọn bằng chuột/chạm.
+
 **Phản hồi và tổng kết:** thông báo chiếm đất/cắt đuôi/vượt hạng, âm thanh tùy chọn; thống kê diện tích lớn nhất, giao tranh, câu hỏi và nguồn thu. Chơi lại nhanh giữ nhân vật; online cần xác nhận sẵn sàng mới. [Chi tiết](docs/FEEDBACK_AND_RESULTS.md).
 
 **Cuộc đua điểm:** HUD hiện hạng, khoảng cách dẫn đầu và nguồn thu. Bốn khu xuất phát cùng 2 điểm/ô/giây; tài chính không lãi kép theo điểm. [Luật cân bằng và mô phỏng 8 phút](docs/ECONOMY_BALANCE.md).
@@ -10,13 +12,13 @@
 
 **Chuyển động online:** phản hồi ngay bằng dự đoán hình ảnh nhân vật, hiệu chỉnh theo server; đối thủ được nội suy qua bộ đệm 120ms. Server vẫn quyết định va chạm, đất và điểm. [Cơ chế và kiểm thử](docs/ONLINE_MOVEMENT.md).
 
-**Câu hỏi cạnh tranh:** tiến độ trả lời độc lập, không chờ cả phòng; trả lời sai phải chờ đủ hình phạt trước khi đi tiếp. Người đang làm bài đứng yên và được bảo vệ khỏi bị cắt đuôi; bot/đối thủ và đồng hồ vẫn chạy. Popup giới thiệu vùng có trong cả local và online, không khóa di chuyển.
+**Câu hỏi cạnh tranh:** tiến độ trả lời độc lập, không chờ cả phòng; trả lời sai phải chờ đủ hình phạt trước khi đi tiếp. Người đang làm bài đứng yên và được bảo vệ khỏi bị cắt đuôi; đối thủ online và đồng hồ vẫn chạy. Popup giới thiệu vùng có trong cả local và online, không khóa di chuyển.
 
-**Thưởng/phạt tri thức:** Mỗi người 10 câu không trùng/trận, 2 câu/chủ đề từ ngân hàng 75 câu. Phát từ 1:00, mỗi 40 giây đến 7:00. Đúng: khiên 5 giây từ lúc đi tiếp và hồi tối đa 20 nộ. Sai: phải chờ 5 giây, không nộ, xóa khiên cũ khi đi tiếp. Không chờ cả phòng. Lobby có quảng trường pixel art, bốn vị trí chờ và bảng mã mời. [Ngân hàng câu hỏi và giải thích](docs/LEARNING_QUESTIONS.md).
+**Thưởng/phạt tri thức:** Mỗi người 10 câu không trùng/trận, 2 câu/chủ đề từ ngân hàng 75 câu. Phát từ 1:00, mỗi 40 giây đến 7:00. Đúng: khiên 5 giây từ lúc đi tiếp và hồi tối đa 20 nộ. Sai: phải chờ 5 giây, không nộ, xóa khiên cũ khi đi tiếp. Không chờ cả phòng. Lobby có quảng trường pixel art, bốn nhân vật xem trước và danh sách tối đa 15 người và bảng mã mời. [Ngân hàng câu hỏi và giải thích](docs/LEARNING_QUESTIONS.md).
 
-**Cập nhật:** đã có phòng online 2–4 người, server điều khiển trận đấu, tăng tốc bằng Space và trạm câu hỏi đồng bộ. Hướng dẫn chạy, chơi thử và các giới hạn xem [docs/MULTIPLAYER.md](docs/MULTIPLAYER.md). Các mục “Phase 1” bên dưới là ghi chép giai đoạn ban đầu.
+**Cập nhật:** đã có phòng online 2–15 người, server điều khiển trận đấu, tăng tốc bằng Space và trạm câu hỏi đồng bộ. Hướng dẫn chạy, chơi thử và các giới hạn xem [docs/MULTIPLAYER.md](docs/MULTIPLAYER.md). Các mục “Phase 1” bên dưới là ghi chép giai đoạn ban đầu.
 
-**Bản chơi thử:** trận 8 phút, bắt buộc đặt tên, 6 nhân vật và 8 màu để chọn. Docker/Render và cách phát hành xem [docs/DEPLOY_RENDER.md](docs/DEPLOY_RENDER.md).
+**Bản chơi thử:** trận 8 phút, bắt buộc đặt tên, 6 nhân vật và 16 màu để chọn. Docker/Render và cách phát hành xem [docs/DEPLOY_RENDER.md](docs/DEPLOY_RENDER.md).
 
 > **Game thể loại:** 2D Top-Down Multiplayer Territory-Control Party Game (Paper.io x Splatoon).  
 > **Chủ đề giáo dục:** Các hình thức biểu hiện của Giá trị Thặng dư trong Nền kinh tế Thị trường (Kinh tế Chính trị Mác – Lênin).

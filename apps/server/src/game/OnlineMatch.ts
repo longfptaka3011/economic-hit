@@ -1,8 +1,17 @@
-import { randomUUID } from 'node:crypto';
+import { randomUUID,randomInt } from 'node:crypto';
 import { RaceQuizDirector, SprintAbility, TerritoryGrid, TrailManager, TerritoryCaptureSystem, GAME_CONSTANTS, EconomySystem,learningOutcome,MatchRecorder,
   stepOnlineMotion, type OnlineMember, type OnlineInput, type OnlineSnapshot, type OnlinePlayer } from '@market-mayhem/shared';
 
 const SPAWNS = [{col:64,row:64},{col:190,row:64},{col:64,row:190},{col:190,row:190}];
+function chooseSpawns(count:number):Array<{col:number;row:number}> {
+  if(count>GAME_CONSTANTS.MAX_PLAYERS)throw new Error('Too many players for an online match');
+  if(count<=4)return SPAWNS.slice(0,count);
+  // Equal distance from the central market, away from district boundaries.
+  // Shuffle sixteen separated slots so join order grants no fixed position.
+  const pool=Array.from({length:16},(_,i)=>{const angle=Math.PI/16+i*Math.PI/8;return {col:Math.round(127.5+90*Math.cos(angle)),row:Math.round(127.5+90*Math.sin(angle))};});
+  for(let i=pool.length-1;i>0;i--){const j=randomInt(i+1);[pool[i],pool[j]]=[pool[j],pool[i]];}
+  return pool.slice(0,count);
+}
 const STOP: OnlineInput = { sequence: -1, dx: 0, dy: 0, sprint: false };
 interface Actor {
   member: OnlineMember; x: number; y: number; vx: number; vy: number;
@@ -26,10 +35,11 @@ export class OnlineMatch {
   quizVersion = 0;
 
   constructor(members: OnlineMember[], private duration: number = GAME_CONSTANTS.MATCH_DURATION_SECONDS) {
+    const spawns=chooseSpawns(members.length);
     this.remainingSeconds = duration;
     this.quiz = new RaceQuizDirector(members.map(member => member.id));
     members.forEach((member, i) => {
-      const spawn = SPAWNS[i];
+      const spawn = spawns[i];
       this.economy.registerPlayer(member.id);const economy=this.economy;
       this.actors.set(member.id, { member, spawn, x: spawn.col*16+8, y: spawn.row*16+8, vx:0, vy:0,
         sprint: new SprintAbility(), shield:3.5, get score(){return economy.getProfile(member.id).totalProfit;}, input:STOP, inputAge:0, sequence:-1,motionRevision:0 });
@@ -136,7 +146,7 @@ export class OnlineMatch {
     if(!this.remainingSeconds){this.economy.settleInterest();this.finished=true;this.clearInputs();}
   }
 
-  snapshot(includeTerritory = false): OnlineSnapshot {
+  snapshot(includeTerritory = false,sinceGridRevision?:number): OnlineSnapshot {
     const players: OnlinePlayer[] = [...this.actors.values()].map(a=>({...a.member,x:a.x,y:a.y,vx:a.vx,vy:a.vy,
       rage:a.sprint.rage,sprinting:a.sprint.isSprinting,exhausted:a.sprint.exhausted,shield:a.shield,score:a.score,learning:!this.finished && this.quiz.isLearning(a.member.id),
       lastInputSequence:a.sequence,inputAgeSeconds:a.inputAge,motionRevision:a.motionRevision,sprintRecoveryDelaySeconds:a.sprint.recoveryDelaySeconds,
@@ -144,9 +154,11 @@ export class OnlineMatch {
     const territory: NonNullable<OnlineSnapshot['territory']>=[];
     if(includeTerritory)for(const id of this.actors.keys())for(const cell of this.grid.getAllOwnedCells(id))territory.push({...cell,owner:id});
     return {matchId:this.id,tick:this.tick,remainingSeconds:this.remainingSeconds,paused:false,
-      finished:this.finished,players,trails:Object.fromEntries([...this.actors.keys()].map(id=>[id,this.trails.getTrail(id)])),
+      finished:this.finished,players,trails:Object.fromEntries([...this.actors.keys()].map(id=>[id,this.trails.getCompactTrail(id)])),
+      trailsCompressed:true,trailVersions:Object.fromEntries([...this.actors.keys()].map(id=>[id,this.trails.versionFor(id)])),
       territoryRevision:this.revision,events:this.recorder.recentEvents(),
       ...(this.finished?{results:players.map(player=>({id:player.id,nickname:player.nickname,color:player.color,score:player.score,ownedCells:player.ownedCells,stats:this.recorder.forPlayer(player.id),income:{...this.economy.getProfile(player.id)}}))}:{}),
-      ...(includeTerritory?{territory}:{})};
+      ...(includeTerritory?{territory}:{}),
+      ...(!includeTerritory && sinceGridRevision!==undefined && sinceGridRevision!==this.grid.revision?{territoryDelta:this.grid.changesSince(sinceGridRevision)}:{})};
   }
 }

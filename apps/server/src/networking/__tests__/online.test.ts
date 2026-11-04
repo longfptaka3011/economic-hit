@@ -4,7 +4,7 @@ import { Server } from 'socket.io';
 import { describe, expect, it } from 'vitest';
 import { setupOnline } from '../online.js';
 import { OnlineMatch } from '../../game/OnlineMatch.js';
-import { LEARNING_QUESTIONS } from '@market-mayhem/shared';
+import { LEARNING_QUESTIONS,AVATAR_COLORS } from '@market-mayhem/shared';
 
 // Reuse the app's installed client for an actual transport test, no second copy.
 const clientRequire=createRequire(new URL('../../../../../client/package.json',import.meta.url));
@@ -13,6 +13,35 @@ const delay=(ms:number)=>new Promise(resolve=>setTimeout(resolve,ms));
 async function until(predicate:()=>boolean){for(let i=0;i<100;i++){if(predicate())return;await delay(10);}throw new Error('Socket event timeout');}
 
 describe('Online room Socket.IO transport',()=>{
+  it('admits fifteen sockets, rejects a sixteenth and waits for every ready vote',async()=>{
+    const http=createServer(),io=new Server(http);let match:OnlineMatch|undefined;
+    const cleanup=setupOnline(io,members=>{match=new OnlineMatch(members);return match;});
+    await new Promise<void>(resolve=>http.listen(0,'127.0.0.1',resolve));const port=(http.address() as {port:number}).port;
+    const clients:any[]=[],states:any[]=[];
+    const request=(client:any,event:string,...args:unknown[])=>new Promise<any>((resolve,reject)=>client.timeout(1500).emit(event,...args,(error:Error,result:unknown)=>error?reject(error):resolve(result)));
+    try{
+      for(let i=0;i<16;i++){
+        const client=connect(`http://127.0.0.1:${port}`,{transports:['websocket'],reconnection:false,forceNew:true}),state:any={};clients.push(client);states.push(state);
+        client.on('online:room',(room:unknown)=>state.room=room);client.on('online:started',(session:unknown)=>state.session=session);client.on('online:snapshot',(snapshot:unknown)=>state.snapshot=snapshot);
+        await new Promise<void>(resolve=>client.once('connect',resolve));
+      }
+      const profile=(i:number)=>({nickname:'Crowd '+i,character:i%6,color:AVATAR_COLORS[i]});
+      const room=(await request(clients[0],'online:create',profile(0))).room;
+      for(let i=1;i<15;i++)expect((await request(clients[i],'online:join',room.code,profile(i))).success).toBe(true);
+      expect((await request(clients[15],'online:join',room.code,profile(15))).error).toContain('15');
+      clients.slice(0,14).forEach(client=>client.emit('online:ready',true));await until(()=>states[0].room.members.filter((m:any)=>m.ready).length===14);
+      clients[0].emit('online:start');await delay(30);expect(match).toBeUndefined();
+      clients[14].emit('online:ready',true);await until(()=>states[0].room.members.every((m:any)=>m.ready));clients[0].emit('online:start');
+      await until(()=>states.slice(0,15).every(state=>state.session));
+      expect(match!.actors.size).toBe(15);expect(states[14].session.snapshot.players).toHaveLength(15);
+      expect(new Set(states.slice(0,15).map(state=>state.session.snapshot.matchId)).size).toBe(1);
+      match!.grid.setOwner(128,128,clients[0].id);match!.revision++;
+      await until(()=>states[0].snapshot?.territoryDelta?.some((cell:any)=>cell.col===128 && cell.row===128 && cell.owner===clients[0].id));
+      expect(states[0].snapshot.territory).toBeUndefined();
+      match!.grid.clearOwner(clients[0].id);match!.revision++;
+      await until(()=>states[0].snapshot?.territoryDelta?.some((cell:any)=>cell.col===128 && cell.row===128 && cell.owner===null));
+    }finally{clients.forEach(client=>client.disconnect());cleanup();await new Promise<void>(resolve=>io.close(()=>resolve()));}
+  });
   it('requires fresh rematch consent and starts a clean match directly from results with the same room and avatars',async()=>{
     const http=createServer(),io=new Server(http);let match:OnlineMatch|undefined;
     const cleanup=setupOnline(io,members=>{match=new OnlineMatch(members);return match;});

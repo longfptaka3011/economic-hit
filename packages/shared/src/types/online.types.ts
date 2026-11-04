@@ -3,7 +3,7 @@ import type { AvatarProfile } from './avatar.types.js';
 import type { EconomyStatus } from '../economy/EconomySystem.js';
 import type { MatchFeedbackEvent,MatchResult } from '../match/MatchRecorder.js';
 
-export const ONLINE_COLORS = [0x38bdf8, 0xfb923c, 0xa3e635, 0xe879f9] as const;
+export {AVATAR_COLORS as ONLINE_COLORS} from './avatar.types.js';
 export interface OnlineMember extends AvatarProfile { id: string; ready: boolean }
 export interface OnlineRoom {
   code: string; hostId: string; status: 'lobby' | 'playing' | 'finished'; members: OnlineMember[];
@@ -20,8 +20,10 @@ export interface OnlinePlayer extends OnlineMember {
 export interface OnlineSnapshot {
   matchId: string; tick: number; remainingSeconds: number; paused: boolean; finished: boolean;
   players: OnlinePlayer[]; trails: Record<string, Array<{col: number; row: number}>>;
+  trailsCompressed?:true;trailVersions?:Record<string,number>;
   territoryRevision: number;
   territory?: Array<{ col: number; row: number; owner: string }>;
+  territoryDelta?:Array<{col:number;row:number;owner:string|null}>;
   events:MatchFeedbackEvent[];
   results?:MatchResult[];
 }

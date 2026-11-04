@@ -6,15 +6,13 @@ import { BoundarySystem } from '../systems/BoundarySystem';
 import { InputSystem } from '../systems/InputSystem';
 import { CameraSystem } from '../systems/CameraSystem';
 import { Player } from '../entities/Player';
-import { BotPlayer } from '../entities/BotPlayer';
 import { PauseOverlay } from '../ui/PauseOverlay';
-import { TerritoryGrid, TrailManager, TerritoryCaptureSystem, GAME_CONSTANTS, RaceQuizDirector, learningOutcome, racePoints,MatchRecorder, type AvatarProfile } from '@market-mayhem/shared';
+import { TerritoryGrid, TrailManager, TerritoryCaptureSystem, GAME_CONSTANTS, RaceQuizDirector, learningOutcome,MatchRecorder, type AvatarProfile } from '@market-mayhem/shared';
 import { TerritoryRenderer } from '../rendering/TerritoryRenderer';
 import { ParticleEffects } from '../effects/ParticleEffects';
 import { NotificationManager } from '../ui/NotificationManager';
 import { EconomicSystem } from '../systems/EconomicSystem';
 import { MiniMap } from '../ui/MiniMap';
-import { ArcadeHUD, LeaderboardEntry } from '../ui/ArcadeHUD';
 
 import { PlayerRenderer } from '../rendering/PlayerRenderer';
 import { SprintHUD } from '../ui/SprintHUD';
@@ -34,7 +32,6 @@ export class MainScene extends Phaser.Scene {
   private particleEffects!: ParticleEffects;
   private notificationManager!: NotificationManager;
   private miniMap!: MiniMap;
-  private arcadeHUD!: ArcadeHUD;
 
   // Systems
   private boundarySystem!: BoundarySystem;
@@ -49,11 +46,9 @@ export class MainScene extends Phaser.Scene {
 
   // Entities
   private player!: Player;
-  private bot!: BotPlayer;
 
   // Spawn constants
   private readonly playerSpawn = { col: 64, row: 64 }; // Starts in Industrial Zone
-  private readonly botSpawn = { col: 190, row: 190 }; // Starts in Land Zone
 
   // Match duration shared with the authoritative server.
   private matchRemainingSec: number = GAME_CONSTANTS.MATCH_DURATION_SECONDS;
@@ -79,13 +74,13 @@ export class MainScene extends Phaser.Scene {
     this.matchEnded=false;
     this.lastClockSecond=-1;
     this.lastRaceEmit=-Infinity;
-    this.recorder=new MatchRecorder();this.recorder.register('local_player');this.recorder.register('bot_player');
+    this.recorder=new MatchRecorder();this.recorder.register('local_player');
     this.game.events.on('request-pause',this.togglePause);
     this.quizDirector=new RaceQuizDirector(['local_player']);
     this.game.events.on('learning:answer',this.submitLearningAnswer,this);
     this.game.events.on('learning:continue',this.continueAfterLearning,this);
-    PlayerRenderer.registerAnimations(this,0);PlayerRenderer.registerAnimations(this,1);
-    // 1. Initialize Map & Grid System (80x80)
+    PlayerRenderer.registerAnimations(this,this.avatar.character);
+    // Initialize the 256x256 city grid.
     this.logicalGrid = new LogicalGrid(
       MAP_CONFIG.gridCols,
       MAP_CONFIG.gridRows,
@@ -97,7 +92,6 @@ export class MainScene extends Phaser.Scene {
     // 2. Initialize Economic System (Marxist Surplus Value & 4 Forms)
     this.economicSystem = new EconomicSystem(this.territoryGrid, this.logicalGrid);
     this.economicSystem.registerPlayer('local_player');
-    this.economicSystem.registerPlayer('bot_player');
 
     // 3. Visual Cartoon City Map Rendering (Bakes roads, buildings, trees, central market)
     this.cityMapRenderer = new CityMapRenderer(this, this.logicalGrid);
@@ -106,7 +100,6 @@ export class MainScene extends Phaser.Scene {
     // 4. Territory & Trail Renderer (Paper.io 2 vibrant layered paper)
     this.territoryRenderer = new TerritoryRenderer(this, this.territoryGrid, this.trailManager);
     this.territoryRenderer.registerPlayer('local_player', this.avatar.color, this.avatar.color, this.avatar.color);
-    this.territoryRenderer.registerPlayer('bot_player', 0xf97316, 0xc2410c, 0xfb923c); // Vibrant Paper Orange
 
     // 5. Effects & Notifications
     this.particleEffects = new ParticleEffects(this);
@@ -134,16 +127,6 @@ export class MainScene extends Phaser.Scene {
     });
     this.territoryGrid.spawnTerritory('local_player', this.playerSpawn.col, this.playerSpawn.row, 2);
 
-    // 8. Spawn Bot Player with 5x5 starting territory in Land Zone
-    this.bot = new BotPlayer(
-      this,
-      this.territoryGrid,
-      this.trailManager,
-      this.boundarySystem,
-      this.botSpawn.col,
-      this.botSpawn.row
-    );
-
     // Draw initial territories
     this.territoryRenderer.renderTerritories();
 
@@ -154,17 +137,9 @@ export class MainScene extends Phaser.Scene {
 
     // 10. Mini-Map Overview (Bottom Right)
     // 10. Mini-Map Overview (Anchored in Bottom-Right Corner)
-    this.miniMap = new MiniMap(this, this.territoryGrid);
+    this.miniMap = new MiniMap(this, this.territoryGrid,this.avatar.color);
 
-    // 11. Pause Overlay
-    // 11. Professional Arcade HUD (Top-Left Capital, Top-Center Timer, Top-Right Leaderboard & Buttons)
-    this.arcadeHUD = new ArcadeHUD(
-      this,
-      () => this.toggleFullscreen(),
-      () => { if(!this.quizDirector.isLearning(this.player.id)) this.pauseOverlay.toggle(); }
-    );
-
-    // 12. Pause Overlay
+    // Pause overlay
     this.pauseOverlay = new PauseOverlay(
       this,
       () => {},
@@ -184,7 +159,6 @@ export class MainScene extends Phaser.Scene {
   }
   private onResize(size:Phaser.Structs.Size):void {
     this.cameraSystem.onResize(size.width,size.height);
-    this.arcadeHUD.onResize(size.width,size.height);
     this.miniMap.onResize(size.width,size.height);
     this.pauseOverlay.onResize(size.width,size.height);
     this.sprintHUD.onResize(size.width,size.height);
@@ -192,11 +166,6 @@ export class MainScene extends Phaser.Scene {
     this.notificationManager.onResize(size.width,size.height);
   }
   public toggleFullscreen():void {this.game.events.emit('request-fullscreen');}
-  public setFullscreenState(isFullscreen: boolean): void {
-    if (this.arcadeHUD) {
-      this.arcadeHUD.setFullscreenButtonText(isFullscreen);
-    }
-  }
 
   update(_time: number, delta: number): void {
     const elapsed=Math.min(Math.max(0,delta),250);
@@ -219,9 +188,9 @@ export class MainScene extends Phaser.Scene {
       this.economicSystem.update(deltaSec);this.economicSystem.settleInterest();
       this.matchEnded=true;this.input.keyboard?.resetKeys();this.tweens.pauseAll();this.anims.pauseAll();this.time.paused=true;
       this.game.events.emit('learning:state',null);
-      const competitors=[{id:this.player.id,nickname:this.avatar.nickname},{id:this.bot.id,nickname:'Tư Bản Robot'}].map(player=>({
+      const competitors=[{id:this.player.id,nickname:this.avatar.nickname}].map(player=>({
         id:player.id,
-        nickname:player.nickname,color:player.id===this.player.id?this.avatar.color:0xf97316,isBot:player.id===this.bot.id,
+        nickname:player.nickname,color:this.avatar.color,
         score:this.economicSystem.getProfile(player.id).totalProfit,ownedCells:this.territoryGrid.getOwnerCellsCount(player.id),
         stats:this.recorder.forPlayer(player.id),income:{...this.economicSystem.getProfile(player.id)}
       }));
@@ -229,7 +198,6 @@ export class MainScene extends Phaser.Scene {
     }
 
     // 2. Measure FPS
-    const fps = Math.round(this.game.loop.actualFps);
     // 2. Read Player Input & Update Physics
     // 3. Read Player Input & Update Physics
     const learning=this.quizDirector.isLearning(this.player.id);
@@ -279,29 +247,7 @@ export class MainScene extends Phaser.Scene {
       }
     }
 
-    // 4. Update Bot Player
-    // 5. Update Bot Player AI
-    this.bot.update(deltaSec, learning?[]:this.trailManager.getTrail(this.player.id), (botResult,newCells) => {
-      if (botResult && botResult.totalCapturedCount > 0) {
-        this.recorder.capture(this.bot.id,newCells,this.bot.x,this.bot.y);this.recorder.observe(this.bot.id,this.territoryGrid.getOwnerCellsCount(this.bot.id));this.publishFeedback();
-        this.territoryRenderer.triggerCaptureFlash(
-          [...botResult.trailCells, ...botResult.enclosedCells],
-          0xf97316
-        );
-        this.particleEffects.emitCaptureBurst(this.bot.x, this.bot.y, 0xf97316,newCells);
-        this.territoryRenderer.renderTerritories();
-      }
-    });
-
-    // 5. Trail Collision Checks
-    // 6. Trail Collision Checks
-    this.checkTrailCollisions(pCol, pRow);
-
-    // 6. Ground Rent Toll Collection in Land Zone
-    // 7. Ground Rent Toll Collection in Land Zone
-    this.checkGroundRentTolls(deltaSec, pCol, pRow);
-
-    // 7. Update Economic Profits & Surplus Value Accumulation
+    // Update Economic Profits & Surplus Value Accumulation
     // 8. Update Economic Profits & Surplus Value Accumulation
     this.economicSystem.update(deltaSec);
 
@@ -311,56 +257,11 @@ export class MainScene extends Phaser.Scene {
 
     // 9. Update MiniMap
     // 10. Update MiniMap
-    this.miniMap.update(this.player.x, this.player.y, this.bot.x, this.bot.y);
+    this.miniMap.update(this.player.x, this.player.y);
 
     // 10. Update Comprehensive HUD Info
-    // 11. Update Arcade HUD
-    this.updateHUD(pCol, pRow, fps);
-  }
-
-  private checkGroundRentTolls(deltaSec: number, pCol: number, pRow: number): void {
-
-    // Check if Bot stepped on Player's Land territory
-    const botCellOwner = this.territoryGrid.getOwner(this.bot.col, this.bot.row);
-    if (botCellOwner === this.player.id) {
-      const toll = this.economicSystem.collectGroundRentToll('bot_player', 'local_player', this.bot.col, this.bot.row);
-      if (toll > 0) {
-        this.notificationManager.showFloatingProfit(this.player.x, this.player.y, `+${toll} ĐỊA TÔ TỪ BOT!`, '#c084fc');
-      }
-    }
-
-    // Check if Player stepped on Bot's Land territory
-    const playerCellOwner = this.territoryGrid.getOwner(pCol, pRow);
-    if (playerCellOwner === this.bot.id && !this.quizDirector.isLearning(this.player.id)) {
-      const toll = this.economicSystem.collectGroundRentToll('local_player', 'bot_player', pCol, pRow);
-      if (toll > 0) {
-        this.notificationManager.showFloatingProfit(this.player.x, this.player.y, `-${toll} NỘP ĐỊA TÔ CHO BOT!`, '#ef4444');
-      }
-    }
-  }
-
-  private checkTrailCollisions(pCol: number, pRow: number): void {
-    if(this.quizDirector.isLearning(this.player.id))return;
-    // Check if Bot crossed Player's exposed trail
-    if (this.player.shieldTimeRemaining <= 0) {
-      const botHitPlayer = this.trailManager.checkCollision(this.bot.id, this.bot.col, this.bot.row);
-      if (botHitPlayer && botHitPlayer.hitPlayerId === this.player.id) {
-        this.recorder.cut(this.bot.id,this.player.id,this.player.x,this.player.y);this.publishFeedback();
-        this.particleEffects.emitEliminationParticles(this.player.x, this.player.y, this.avatar.color);
-        this.respawnPlayer();
-        return;
-      }
-    }
-
-    // Check if Player crossed Bot's exposed trail
-    if (this.bot.shieldTimeRemaining <= 0) {
-      const playerHitBot = this.trailManager.checkCollision(this.player.id, pCol, pRow);
-      if (playerHitBot && playerHitBot.hitPlayerId === this.bot.id) {
-        this.recorder.cut(this.player.id,this.bot.id,this.bot.x,this.bot.y);this.publishFeedback();
-        this.particleEffects.emitEliminationParticles(this.bot.x, this.bot.y, 0xf97316);
-        this.respawnBot();
-      }
-    }
+    // Publish the compact React HUD state.
+    this.publishRaceState();
   }
 
   private respawnPlayer(): void {
@@ -375,64 +276,13 @@ export class MainScene extends Phaser.Scene {
     this.territoryRenderer.renderTerritories();
   }
 
-  private respawnBot(): void {
-    this.trailManager.clearTrail(this.bot.id);
-    this.bot.respawn(this.botSpawn.col, this.botSpawn.row);
-    this.territoryRenderer.renderTerritories();
-  }
-
-  private updateHUD(pCol: number, pRow: number, fps: number): void {
-    const playerTiles = this.territoryGrid.getOwnerCellsCount(this.player.id);
-    const playerPct = this.territoryGrid.getTerritoryPercentage(this.player.id);
-    const botTiles = this.territoryGrid.getOwnerCellsCount(this.bot.id);
-    const botPct = this.territoryGrid.getTerritoryPercentage(this.bot.id);
-
-    // Economic profile
-    const profile = this.economicSystem.getProfile(this.player.id);
-    const botProfile = this.economicSystem.getProfile(this.bot.id);
-
-    const leaderboard: LeaderboardEntry[] = [
-      {
-        name: 'Bạn',
-        isPlayer: true,
-        tiles: playerTiles,
-        percentage: playerPct,
-        profit: profile.totalProfit,
-        hasShield: this.player.shieldTimeRemaining > 0 || this.quizDirector.isLearning(this.player.id),
-      },
-      {
-        name: 'Bot',
-        isPlayer: false,
-        tiles: botTiles,
-        percentage: botPct,
-        profit: botProfile.totalProfit,
-        hasShield: this.bot.shieldTimeRemaining > 0,
-      },
-    ].sort((a, b) => racePoints(b.profit) - racePoints(a.profit));
-
-    if(this.time.now-this.lastRaceEmit>=250){
-      this.lastRaceEmit=this.time.now;
-      this.game.events.emit('race:state',{remainingSeconds:this.matchRemainingSec,players:[
-        {id:this.player.id,nickname:this.avatar.nickname,color:this.avatar.color,score:profile.totalProfit,ownedCells:playerTiles,economy:this.economicSystem.getStatus(this.player.id),learning:this.quizDirector.isLearning(this.player.id),shield:this.player.shieldTimeRemaining,x:this.player.x,y:this.player.y},
-        {id:this.bot.id,nickname:'Tư Bản Robot',color:0xf97316,score:botProfile.totalProfit,ownedCells:botTiles,economy:this.economicSystem.getStatus(this.bot.id),shield:this.bot.shieldTimeRemaining,x:this.bot.x,y:this.bot.y}
-      ]});
-    }
-
-    const region=this.regionManager.getCurrentRegion();
-    const zoneTitle=region.vietnameseName,zoneColor=region.textColor;
-    this.arcadeHUD.update(
-      profile,
-      this.matchRemainingSec,
-      leaderboard,
-      zoneTitle,
-      zoneColor,
-      this.player.shieldTimeRemaining,
-      fps,
-      this.player.x,
-      this.player.y,
-      pCol,
-      pRow
-    );
+  private publishRaceState():void {
+    if(this.time.now-this.lastRaceEmit<250)return;
+    this.lastRaceEmit=this.time.now;
+    const profile=this.economicSystem.getProfile(this.player.id);
+    this.game.events.emit('race:state',{remainingSeconds:this.matchRemainingSec,players:[
+      {id:this.player.id,nickname:this.avatar.nickname,color:this.avatar.color,score:profile.totalProfit,ownedCells:this.territoryGrid.getOwnerCellsCount(this.player.id),economy:this.economicSystem.getStatus(this.player.id),learning:this.quizDirector.isLearning(this.player.id),shield:this.player.shieldTimeRemaining,x:this.player.x,y:this.player.y}
+    ]});
   }
 
   private publishLearningState():void {this.game.events.emit('learning:state',this.quizDirector.viewFor(this.player.id));}
@@ -458,12 +308,10 @@ export class MainScene extends Phaser.Scene {
     this.scale.off('resize',this.onResize,this);
     if (this.inputSystem) this.inputSystem.destroy();
     if (this.player) this.player.destroy();
-    if (this.bot) this.bot.destroy();
     if (this.pauseOverlay) this.pauseOverlay.destroy();
     if (this.territoryRenderer) this.territoryRenderer.destroy();
     if (this.notificationManager) this.notificationManager.destroy();
     if (this.miniMap) this.miniMap.destroy();
-    if (this.arcadeHUD) this.arcadeHUD.destroy();
     this.cityMapRenderer?.destroy();
   }
 }

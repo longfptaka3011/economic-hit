@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { TerritoryGrid, TrailManager, SprintAbility, type OnlineSnapshot } from '@market-mayhem/shared';
+import { TerritoryGrid, TrailManager, SprintAbility,expandCompactTrail, type OnlineSnapshot } from '@market-mayhem/shared';
 import { LogicalGrid } from '../entities/LogicalGrid';
 import { CityMapRenderer } from '../rendering/CityMapRenderer';
 import { PlayerRenderer } from '../rendering/PlayerRenderer';
@@ -11,6 +11,7 @@ import { RegionManager } from '../entities/RegionManager';
 import { DiscoveryPopup } from '../ui/DiscoveryPopup';
 import {ParticleEffects} from '../effects/ParticleEffects';
 import {LocalMotionPrediction,RemoteMotionBuffer} from '../networking/MotionSmoothing';
+import {mergeLoadingOwnership} from '../networking/ownership';
 
 /** Predict local appearance, interpolate opponents; authority owns land and scores. */
 export class OnlineScene extends Phaser.Scene {
@@ -33,6 +34,7 @@ export class OnlineScene extends Phaser.Scene {
   private remoteMotion=new RemoteMotionBuffer();
   private lastIntent={dx:0,dy:0,sprint:false};
   private lastSnapshotTick=-1;
+  private trailVersions=new Map<string,number>();
   constructor(private snapshot:OnlineSnapshot,private playerId:string){super({key:'OnlineScene'});}
 
   preload():void {
@@ -74,7 +76,7 @@ export class OnlineScene extends Phaser.Scene {
     if(this.ready && snapshot.tick<this.lastSnapshotTick)return;
     const wasPaused=this.snapshot.paused;
     const wasLearning=this.snapshot.players.find(player=>player.id===this.playerId)?.learning;
-    if(!this.ready && !snapshot.territory && this.snapshot.territory) snapshot={...snapshot,territory:this.snapshot.territory};
+    if(!this.ready)snapshot=mergeLoadingOwnership(this.snapshot,snapshot);
     this.snapshot=snapshot;if(!this.ready)return;
     this.lastSnapshotTick=snapshot.tick;
     const now=performance.now();this.remoteMotion.push(snapshot,now);
@@ -82,7 +84,7 @@ export class OnlineScene extends Phaser.Scene {
     if(me)this.prediction.reconcile(me,snapshot.tick,now,snapshot.paused || snapshot.finished || me.learning);
     if(snapshot.paused!==wasPaused || snapshot.players.find(player=>player.id===this.playerId)?.learning!==wasLearning || snapshot.finished)this.stopInput();
     const ids=new Set(snapshot.players.map(player=>player.id));
-    for(const [id,renderer]of this.renderers)if(!ids.has(id)){renderer.destroy();this.renderers.delete(id);this.trails.clearTrail(id);}
+    for(const [id,renderer]of this.renderers)if(!ids.has(id)){renderer.destroy();this.renderers.delete(id);this.trails.clearTrail(id);this.trailVersions.delete(id);}
     snapshot.players.forEach((player)=>{
       if(!this.renderers.has(player.id)){
         const renderer=new PlayerRenderer(this,player.character,player.color);
@@ -90,8 +92,13 @@ export class OnlineScene extends Phaser.Scene {
         this.renderers.set(player.id,renderer);
         this.territory.registerPlayer(player.id,player.color,player.color,player.color);
       }
-      this.trails.clearTrail(player.id);
-      for(const point of snapshot.trails[player.id]??[])this.trails.addPoint(player.id,point.col,point.row);
+      const version=snapshot.trailVersions?.[player.id];
+      if(version===undefined || this.trailVersions.get(player.id)!==version){
+        this.trails.clearTrail(player.id);
+        const points=snapshot.trails[player.id]??[];
+        for(const point of snapshot.trailsCompressed?expandCompactTrail(points):points)this.trails.addPoint(player.id,point.col,point.row);
+        if(version!==undefined)this.trailVersions.set(player.id,version);
+      }
     });
     if(snapshot.territory && snapshot.territoryRevision!==this.revision){
       // Complete ownership refresh is sent only on changes, including disconnects.
@@ -99,6 +106,9 @@ export class OnlineScene extends Phaser.Scene {
       for(let row=0;row<256;row++)for(let col=0;col<256;col++){const owner=this.grid.getOwner(col,row);if(owner)owners.add(owner);}
       owners.forEach(owner=>this.grid.clearOwner(owner));
       snapshot.territory.forEach(cell=>this.grid.setOwner(cell.col,cell.row,cell.owner));
+      this.revision=snapshot.territoryRevision;this.territory.renderTerritories();
+    }else if(snapshot.territoryDelta){
+      for(const cell of snapshot.territoryDelta)this.grid.setOwner(cell.col,cell.row,cell.owner);
       this.revision=snapshot.territoryRevision;this.territory.renderTerritories();
     }
     for(const event of snapshot.events){

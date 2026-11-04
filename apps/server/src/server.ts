@@ -13,6 +13,7 @@ const app=createApp(clientDirectory);
 const httpServer = createServer(app);
 
 const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
+  perMessageDeflate:{threshold:2048,serverNoContextTakeover:true,clientNoContextTakeover:true,zlibDeflateOptions:{level:3}},
   cors: {
     origin: SERVER_CONFIG.CORS_ORIGIN,
     methods: ['GET', 'POST'],

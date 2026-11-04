@@ -3,7 +3,7 @@ import type { EconomicScoreBreakdown } from '../economy/EconomySystem.js';
 export interface MatchStats { peakCells:number;captures:number;capturedCells:number;cuts:number;deaths:number;questionsAnswered:number;questionsCorrect:number }
 export interface MatchFeedbackEvent { id:number;type:'capture'|'cut';actorId:string;victimId?:string;cells?:number;x:number;y:number }
 export interface MatchResult {
-  id:string;nickname:string;color:number;score:number;ownedCells:number;isBot?:boolean;
+  id:string;nickname:string;color:number;score:number;ownedCells:number;
   stats:MatchStats;income:EconomicScoreBreakdown;
 }
 /** Shared measurement only: never changes capture, rewards, or score. */

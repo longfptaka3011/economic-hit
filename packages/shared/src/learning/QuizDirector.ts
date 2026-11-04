@@ -38,9 +38,9 @@ export interface QuizView {
   answer: (QuizAnswer & { correctIndex: number; explanation: string }) | null;
 }
 
-/** Pauses its clock during an open round. A round cannot finish before every
- * registered human has submitted. Bot simulation is paused by the game host.
- * Transport-independent; this is not an implementation of network room sync.
+/** Legacy all-participant checkpoint utility. Actual gameplay uses the
+ * independent real-time gates in RaceQuizDirector. This utility pauses its
+ * clock during a round and is not an implementation of network room sync.
  */
 export class QuizDirector {
   public active: QuizRound | null = null;

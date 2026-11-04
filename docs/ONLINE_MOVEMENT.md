@@ -19,4 +19,4 @@ Respawn and quiz continuation increment the authoritative motion revision. The c
 
 ## Scope
 
-This release improves perceived movement response. It does not increase server capacity, change hosting tiers, add lag compensation for cuts or raise the four-player room limit. Measure real RTT, frame time and server tick cost before changing those policies.
+This subsystem improves perceived movement response and does not add lag compensation for cuts. The subsequent crowd release raises the room limit to fifteen and optimizes state delivery; see [CROWD_PLAYTEST.md](CROWD_PLAYTEST.md). Hosting remains one instance. Measure real RTT, frame time and server tick cost when increasing concurrent room count.

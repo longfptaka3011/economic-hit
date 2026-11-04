@@ -3,7 +3,7 @@ import { socket, measurePing } from '../networking/socket';
 import { GameView as PhaserGame } from '../game/GameView';
 import { OnlineLobby } from './OnlineLobby';
 import { AvatarSetup, loadAvatar, rememberAvatar } from '../components/AvatarSetup';
-import { parseAvatarProfile } from '@market-mayhem/shared';
+import { GAME_CONSTANTS,parseAvatarProfile } from '@market-mayhem/shared';
 import { HowToPlay } from '../components/HowToPlay';
 import {CircleHelp,Maximize2,Gamepad2,Users} from 'lucide-react';
 import {HomePixelIcon,type HomeIconKind} from '../components/HomePixelIcon';
@@ -105,12 +105,12 @@ export const HomePage: React.FC = () => {
           <div className="storybook-logo"><span className="home-flag" aria-hidden="true"/><span className="logo-star star-left" aria-hidden="true">✦</span><h1 id="home-title">MARKET MAYHEM</h1><span className="logo-star star-right" aria-hidden="true">✦</span><div className="storybook-ribbon">CHIẾN TRƯỜNG GIÁ TRỊ THẶNG DƯ</div></div>
           <p className="storybook-description">Vẽ đường chiếm đất. Tích lũy lợi nhuận. Bứt phá bằng kiến thức.<br/><span>Khám phá các hình thức biểu hiện của <strong>giá trị thặng dư</strong> qua cuộc đua kinh tế cùng bạn bè.</span></p>
           <div className="storybook-actions" id="home-actions" tabIndex={-1}>
-            <button className="storybook-cta cta-gold" onClick={()=>{setProfileError('');setLocalSetup(true);}}><HomePixelIcon kind="play"/><span>Chơi Thử Nghiệm<small>Luyện tập cùng bot</small></span></button>
+            <button className="storybook-cta cta-gold" onClick={()=>{setProfileError('');setLocalSetup(true);}}><HomePixelIcon kind="play"/><span>Chơi Thử Nghiệm<small>Luyện tập một mình</small></span></button>
             <button className="storybook-cta cta-blue" onClick={()=>setModalType('create')}><HomePixelIcon kind="chest"/><span>Tạo Phòng<small>Mời bạn bè tranh tài</small></span></button>
             <button className="storybook-cta cta-green" onClick={()=>setModalType('join')}><HomePixelIcon kind="people"/><span>Vào Phòng<small>Tham gia bằng mã phòng</small></span></button>
           </div>
-          <div className="storybook-match-facts"><span><b>8</b> phút mỗi trận</span><i aria-hidden="true">◆</i><span><b>2–4</b> người online</span><i aria-hidden="true">◆</i><span><b>10</b> câu hỏi / người</span></div>
-          {!isConnected && <p className="storybook-offline" role="status">Máy chủ đang khởi động. Bạn vẫn có thể chơi thử với bot trong lúc chờ.</p>}
+          <div className="storybook-match-facts"><span><b>8</b> phút mỗi trận</span><i aria-hidden="true">◆</i><span><b>2–{GAME_CONSTANTS.MAX_PLAYERS}</b> người online</span><i aria-hidden="true">◆</i><span><b>10</b> câu hỏi / người</span></div>
+          {!isConnected && <p className="storybook-offline" role="status">Chưa kết nối máy chủ. Bạn vẫn có thể luyện tập một mình trong lúc chờ.</p>}
         </div>
       </section>
       <section className="storybook-districts" aria-labelledby="district-heading">

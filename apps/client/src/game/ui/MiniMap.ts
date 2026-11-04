@@ -9,13 +9,12 @@ export class MiniMap {
   private container!: Phaser.GameObjects.Container;
   private mapGraphics!: Phaser.GameObjects.Graphics;
   private playerDot!: Phaser.GameObjects.Arc;
-  private botDot!: Phaser.GameObjects.Arc;
   private cameraBox!: Phaser.GameObjects.Graphics;
 
   private readonly mapSize: number = 110;
   private readonly scale: number;
 
-  constructor(scene: Phaser.Scene, grid: TerritoryGrid) {
+  constructor(scene: Phaser.Scene, grid: TerritoryGrid,private color=0x06b6d4) {
     this.scene = scene;
     this.grid = grid;
     this.scale = this.mapSize / MAP_CONFIG.worldWidth; // 110 / 1280
@@ -45,12 +44,10 @@ export class MiniMap {
     this.mapGraphics = this.scene.add.graphics();
     this.cameraBox = this.scene.add.graphics();
 
-    // Player & Bot radar dots
-    this.playerDot = this.scene.add.circle(0, 0, 3.5, 0x06b6d4);
+    // Solo practice radar marker.
+    this.playerDot = this.scene.add.circle(0, 0, 3.5, this.color);
     this.playerDot.setStrokeStyle(1, 0xffffff, 1);
 
-    this.botDot = this.scene.add.circle(0, 0, 3, 0xf97316);
-    this.botDot.setStrokeStyle(1, 0xffffff, 1);
 
     this.container = this.scene.add.container(posX, posY, [
       bg,
@@ -58,7 +55,6 @@ export class MiniMap {
       this.mapGraphics,
       this.cameraBox,
       this.playerDot,
-      this.botDot,
     ]);
 
     this.container.setScrollFactor(0);
@@ -113,10 +109,8 @@ export class MiniMap {
     }
   }
 
-  public update(playerX: number, playerY: number, botX: number, botY: number): void {
-    // Update player and bot dots
+  public update(playerX: number, playerY: number): void {
     this.playerDot.setPosition(playerX * this.scale, playerY * this.scale);
-    this.botDot.setPosition(botX * this.scale, botY * this.scale);
 
     // Update Camera Viewport Box on Mini-map
     const cam = this.scene.cameras.main;

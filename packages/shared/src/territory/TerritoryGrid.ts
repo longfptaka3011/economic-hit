@@ -10,6 +10,8 @@ export class TerritoryGrid {
   public readonly totalCells: number;
   private owners: (string | null)[][];
   private ownerCounts: Map<string, number> = new Map();
+  private ownerCells=new Map<string,Set<number>>();
+  private latestChanges=new Map<number,{owner:string|null;revision:number}>();
   private ownershipRevision=0;
   public get revision():number {return this.ownershipRevision;}
 
@@ -39,14 +41,17 @@ export class TerritoryGrid {
     const prevOwner = this.owners[row][col];
     if (prevOwner === newOwnerId) return;
     this.ownershipRevision++;
+    this.latestChanges.set(row*this.cols+col,{owner:newOwnerId,revision:this.ownershipRevision});
 
     // Decrement previous owner count
     if (prevOwner !== null) {
+      this.ownerCells.get(prevOwner)?.delete(row*this.cols+col);
       const prevCount = this.ownerCounts.get(prevOwner) || 0;
       if (prevCount > 1) {
         this.ownerCounts.set(prevOwner, prevCount - 1);
       } else {
         this.ownerCounts.delete(prevOwner);
+        this.ownerCells.delete(prevOwner);
       }
     }
 
@@ -55,6 +60,7 @@ export class TerritoryGrid {
 
     // Increment new owner count
     if (newOwnerId !== null) {
+      let cells=this.ownerCells.get(newOwnerId);if(!cells){cells=new Set();this.ownerCells.set(newOwnerId,cells);}cells.add(row*this.cols+col);
       const nextCount = this.ownerCounts.get(newOwnerId) || 0;
       this.ownerCounts.set(newOwnerId, nextCount + 1);
     }
@@ -90,29 +96,22 @@ export class TerritoryGrid {
   }
 
   public clearOwner(ownerId: string): void {
-    let changed=false;
-    for (let r = 0; r < this.rows; r++) {
-      for (let c = 0; c < this.cols; c++) {
-        if (this.owners[r][c] === ownerId) {
-          this.owners[r][c] = null;
-          changed=true;
-        }
-      }
-    }
+    const cells=this.ownerCells.get(ownerId),changed=!!cells?.size;
+    for(const key of cells??[]){this.owners[Math.floor(key/this.cols)][key%this.cols]=null;this.latestChanges.set(key,{owner:null,revision:this.ownershipRevision+1});}
+    this.ownerCells.delete(ownerId);
     this.ownerCounts.delete(ownerId);
     if(changed)this.ownershipRevision++;
   }
 
   public getAllOwnedCells(ownerId: string): Array<{ col: number; row: number }> {
-    const cells: Array<{ col: number; row: number }> = [];
-    for (let r = 0; r < this.rows; r++) {
-      for (let c = 0; c < this.cols; c++) {
-        if (this.owners[r][c] === ownerId) {
-          cells.push({ col: c, row: r });
-        }
-      }
-    }
-    return cells;
+    return [...(this.ownerCells.get(ownerId)??[])].map(key=>({col:key%this.cols,row:Math.floor(key/this.cols)}));
+  }
+
+  /** Bounded journal: one latest entry per cell, including ownership removals. */
+  public changesSince(revision:number):Array<{col:number;row:number;owner:string|null}> {
+    const changes=[];
+    for(const [key,change] of this.latestChanges)if(change.revision>revision)changes.push({col:key%this.cols,row:Math.floor(key/this.cols),owner:change.owner});
+    return changes;
   }
 }
 

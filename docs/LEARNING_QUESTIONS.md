@@ -25,10 +25,12 @@ Mỗi chặng chọn một câu ngẫu nhiên đúng chủ đề, giống nhau c
 
 ## Quy tắc
 
-- Trạm mở: chỉ người đang trả lời đứng yên, giữ nguyên nộ và được bảo vệ khỏi bị cắt đuôi. Người đó cũng không thể cắt đuôi người khác. Bot/đối thủ, điểm kinh tế và đồng hồ trận vẫn chạy; đất vẫn có thể bị đối thủ chiếm.
+- Đáp án, tiếp tục và rời trạm chỉ nhận bấm chuột/chạm. Focus ban đầu nằm trên khung câu hỏi. Space, Enter, WASD và phím mũi tên không kích hoạt nút, kể cả khi đang giữ phím từ trước lúc popup mở. Tab vẫn di chuyển focus; lựa chọn được xác nhận bằng chuột/chạm theo yêu cầu sản phẩm.
+
+- Trạm mở: chỉ người đang trả lời đứng yên, giữ nguyên nộ và được bảo vệ khỏi bị cắt đuôi. Người đó cũng không thể cắt đuôi người khác. Đối thủ online, điểm kinh tế và đồng hồ trận vẫn chạy; đất vẫn có thể bị đối thủ chiếm.
 - Mỗi người chọn một lần; khóa lựa chọn rồi hiện đáp án đúng và giải thích. Đúng nhận khiên 5 giây và hồi tối đa 20 nộ khi bấm tiếp tục. Khiên bắt đầu khi quay lại chơi, không bị tiêu hao lúc đang đọc câu hỏi; không cộng thưởng/gia hạn bằng xác nhận trùng hoặc round cũ.
 - Sai phải chờ đủ 5 giây chơi kể từ lúc gửi đáp án; thời gian đọc giải thích được tính vào thời gian chờ. Trong lúc đó không được di chuyển/cắt đuôi. Server từ chối xác nhận sớm và gửi đếm ngược; người chơi vẫn phải bấm tiếp tục sau khi đủ thời gian. Không thưởng nộ, xóa khiên cũ khi đi tiếp, không trừ điểm hay xóa lãnh thổ.
-- Tiến độ độc lập, không chờ cả phòng. Áp dụng cả local (bot tiếp tục chơi) và online. Hết 8 phút trận vẫn kết thúc kể cả còn người đang đọc/chờ phạt. Chi tiết xem [MULTIPLAYER.md](MULTIPLAYER.md).
+- Tiến độ độc lập, không chờ cả phòng. Áp dụng cả luyện tập một mình và online. Hết 8 phút trận vẫn kết thúc kể cả còn người đang đọc/chờ phạt. Chi tiết xem [MULTIPLAYER.md](MULTIPLAYER.md).
 - Có thể kết thúc lượt và về trang chủ, không có nút bỏ qua câu hỏi để tiếp tục trận.
 - Cơ chế điểm cửa hàng, thu phí ô đất và lãi trong game là giản lược gameplay; không thay thế các khái niệm và quan hệ trong giáo trình.
 
