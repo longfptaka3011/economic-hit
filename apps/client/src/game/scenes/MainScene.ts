@@ -272,7 +272,7 @@ export class MainScene extends Phaser.Scene {
           this.notificationManager.showCaptureToast(
             this.player.x,
             this.player.y,
-            result.totalCapturedCount,
+            this.territoryGrid.getOwnerCellsCount(this.player.id)-before,
             newPercent
           );
         }
