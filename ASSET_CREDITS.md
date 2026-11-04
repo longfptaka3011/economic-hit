@@ -4,6 +4,16 @@ We gratefully acknowledge the creators of the open-source and public domain asse
 
 ---
 
+## Homepage landscape and district illustrations
+
+- Files: `apps/client/public/assets/home/market-sunset.webp`, `apps/client/public/assets/home/district-scenes.webp`.
+- Created for this project with the built-in OpenAI image generation tool, using the user's supplied homepage image as a style/composition reference for the landscape. These are generated illustrations, not downloaded Kenney/itch.io/CraftPix packs, and are not represented as CC0 assets.
+- UI lettering, frames, ribbons, flag and pixel icons are implemented in React/CSS/SVG. No buttons or text are baked into the illustrations.
+- Production WebP files preserve the generated image dimensions and composition; PNG originals remain in the generation output and workspace `.tmp` for reproducibility.
+- Generation mode, exact prompts, dimensions and implementation decisions: [docs/HOMEPAGE_ART.md](docs/HOMEPAGE_ART.md).
+
+---
+
 ## 1. Kenney RPG Urban Pack
 - **Author:** Kenney (Kenney Vleugels)
 - **Website:** [https://kenney.nl/](https://kenney.nl/)

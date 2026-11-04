@@ -9,6 +9,8 @@ Complete inventory of imported visual assets, source information, author, licens
 | `apps/client/public/assets/tiles/License_RPG_Urban.txt` | Included with Kenney distribution | Kenney | CC0 1.0 Universal | Yes | No | Verified | Official license text file |
 | `apps/client/public/assets/tiles/License_Tiny_Town.txt` | Included with Kenney distribution | Kenney | CC0 1.0 Universal | Yes | No | Verified | Official license text file |
 | `apps/client/public/assets/ui/market-coin.svg` | Original project source | MARKET MAYHEM project | Project asset; not a third-party license | Controlled by project owner | No external attribution | Created locally as SVG code | 16×16 pixel coin favicon |
+| `apps/client/public/assets/home/market-sunset.webp` | Generated for the project; see `docs/HOMEPAGE_ART.md` | OpenAI image generation output | Generated project artwork; not an imported licensed pack or CC0 claim | Not a downloaded commercial-use pack | No third-party pack attribution | Provenance and exact prompt recorded | 1659×948 homepage landscape, 274,282 bytes |
+| `apps/client/public/assets/home/district-scenes.webp` | Generated for the project; see `docs/HOMEPAGE_ART.md` | OpenAI image generation output | Generated project artwork; not an imported licensed pack or CC0 claim | Not a downloaded commercial-use pack | No third-party pack attribution | Provenance and exact prompt recorded | 2172×724 four-panel district illustration atlas, 756,940 bytes |
 
 ---
 

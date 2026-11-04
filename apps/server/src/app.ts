@@ -8,7 +8,7 @@ export function createApp(clientDirectory?: string) {
   const app=express();
   app.use(cors({origin:process.env.CORS_ORIGIN || true}));
   app.use(express.json({limit:'16kb'}));
-  app.get('/health',(_req,res)=>res.json({status:'ok',game:'MARKET MAYHEM',version:'0.8.0',
+  app.get('/health',(_req,res)=>res.json({status:'ok',game:'MARKET MAYHEM',version:'0.9.0',
     matchDurationSeconds:GAME_CONSTANTS.MATCH_DURATION_SECONDS,uptimeSeconds:Math.floor(process.uptime())}));
   if(clientDirectory && existsSync(path.join(clientDirectory,'index.html'))) {
     app.use(express.static(clientDirectory,{index:false,maxAge:'1h'}));

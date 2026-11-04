@@ -5,19 +5,9 @@ import { OnlineLobby } from './OnlineLobby';
 import { AvatarSetup, loadAvatar, rememberAvatar } from '../components/AvatarSetup';
 import { parseAvatarProfile } from '@market-mayhem/shared';
 import { HowToPlay } from '../components/HowToPlay';
-import {
-  Play,
-  PlusCircle,
-  LogIn,
-  ArrowLeft,
-  ShieldCheck,
-  Building2,
-  TrendingUp,
-  Landmark,
-  MapPin,
-  X,
-  Sparkles,
-} from 'lucide-react';
+import {CircleHelp,Maximize2,Gamepad2,Users} from 'lucide-react';
+import {HomePixelIcon,type HomeIconKind} from '../components/HomePixelIcon';
+import '../styles/home.css';
 
 export const HomePage: React.FC = () => {
   const [isPlayingLocal, setIsPlayingLocal] = useState<boolean>(false);
@@ -90,170 +80,49 @@ export const HomePage: React.FC = () => {
     if(!valid){setProfileError('Tên nhân vật cần 2–24 ký tự và không được chỉ chứa khoảng trắng.');return;}
     setProfile(valid);rememberAvatar(valid);setLocalSetup(false);setIsPlayingLocal(true);
   }}><AvatarSetup value={profile} onChange={value=>{setProfile(value);setProfileError('');}}/>{profileError && <p role="alert" className="online-error">{profileError}</p>}<button className="pixel-button primary">VÀO THÀNH PHỐ · 8 PHÚT</button></form><button className="learning-exit" onClick={()=>setLocalSetup(false)}>Về trang chủ</button></section></main>;
-  return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between selection:bg-cyan-500 selection:text-black">
-      {/* Top Navigation Bar */}
-      {!isPlayingLocal && (
-        <header className="border-b border-slate-800 bg-slate-900/60 backdrop-blur-md px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 via-rose-500 to-cyan-500 flex items-center justify-center font-black text-xl shadow-lg shadow-cyan-500/20 text-white">
-              M
-            </div>
-            <div>
-              <h1 className="font-extrabold text-base md:text-lg tracking-wider text-white">
-                MARKET MAYHEM
-              </h1>
-              <p className="text-xs text-amber-400 font-medium">Chiến Trường Thị Trường • Multiplayer</p>
-            </div>
-          </div>
+  if(isPlayingLocal)return <div className="game-viewport"><PhaserGame avatar={profile} onExitGame={exitGameToMenu} onToggleFullscreen={toggleBrowserFullscreen} isFullscreen={isFullscreen} className="w-full h-full"/></div>;
 
-          {/* Server Status Indicator */}
-          <div className="flex items-center space-x-3">
-            <div className="flex items-center space-x-2 px-3 py-1.5 rounded-full bg-slate-800/90 border border-slate-700 text-xs">
-              <span
-                className={`w-2.5 h-2.5 rounded-full animate-pulse ${
-                  isConnected ? 'bg-emerald-400 shadow-emerald-400/50' : 'bg-rose-500 shadow-rose-500/50'
-                }`}
-              />
-              <span className="font-medium text-slate-300 hidden sm:inline">
-                {isConnected ? 'Đã kết nối máy chủ' : 'Đang kết nối máy chủ…'}
-              </span>
-              {latency !== null && (
-                <span className="text-emerald-400 border-l border-slate-700 pl-2 font-mono font-semibold">
-                  {latency}ms
-                </span>
-              )}
-            </div>
+  const districts:Array<{icon:HomeIconKind;title:string;description:string;reward:string;theme:string}>=[
+    {icon:'factory',title:'Khu Công nghiệp',description:'Khám phá nguồn gốc giá trị thặng dư và hình thái lợi nhuận.',reward:'Lợi nhuận công nghiệp',theme:'industrial'},
+    {icon:'shop',title:'Khu Thương nghiệp',description:'Theo dòng hàng hóa, tìm hiểu sự phân chia lợi nhuận trong lưu thông.',reward:'Lợi nhuận thương nghiệp',theme:'commercial'},
+    {icon:'bank',title:'Khu Tài chính',description:'Phân biệt lợi tức và lợi nhuận của người sử dụng tư bản.',reward:'Vốn vay · Lợi tức',theme:'financial'},
+    {icon:'land',title:'Khu Đất đai',description:'Tìm hiểu địa tô và quan hệ sở hữu, sử dụng đất đai.',reward:'Đất đai · Địa tô',theme:'land'},
+  ];
+  const showHelp=()=>{
+    const guide=document.querySelector<HTMLDetailsElement>('.storybook-guide details');
+    if(guide){guide.open=true;guide.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'center'});guide.querySelector('summary')?.focus({preventScroll:true});}
+  };
+  return <div className="storybook-home" id="home-top">
+    <a className="home-skip" href="#home-actions">Đến nút chơi</a>
+    <header className="storybook-header">
+      <a href="#home-top" className="storybook-brand"><span aria-hidden="true">✦</span> MARKET MAYHEM <span aria-hidden="true">✦</span></a>
+      <nav className="storybook-nav" aria-label="Giới thiệu trò chơi"><a href="#district-heading"><Gamepad2 size={21}/> Chiến trường thị trường</a><a href="#home-actions"><Users size={21}/> Multiplayer</a></nav>
+      <div className="storybook-tools"><div className={'storybook-status '+(isConnected?'connected':'')} role="status"><i aria-hidden="true"/><span>{isConnected?'Đã kết nối máy chủ':'Đang kết nối…'}</span>{latency!==null && <strong className={latency>150?'high-ping':''} title="Thời gian khứ hồi đến máy chủ">{latency} ms</strong>}</div><button onClick={toggleBrowserFullscreen} className="storybook-tool" aria-label={isFullscreen?'Thoát toàn màn hình':'Toàn màn hình'} title="Toàn màn hình"><Maximize2/></button><button className="storybook-tool" onClick={showHelp} aria-label="Hướng dẫn chơi" title="Hướng dẫn chơi"><CircleHelp/></button></div>
+    </header>
+    <main>
+      <section className="storybook-hero" aria-labelledby="home-title">
+        <div className="storybook-hero-inner">
+          <div className="storybook-logo"><span className="home-flag" aria-hidden="true"/><span className="logo-star star-left" aria-hidden="true">✦</span><h1 id="home-title">MARKET MAYHEM</h1><span className="logo-star star-right" aria-hidden="true">✦</span><div className="storybook-ribbon">CHIẾN TRƯỜNG GIÁ TRỊ THẶNG DƯ</div></div>
+          <p className="storybook-description">Vẽ đường chiếm đất. Tích lũy lợi nhuận. Bứt phá bằng kiến thức.<br/><span>Khám phá các hình thức biểu hiện của <strong>giá trị thặng dư</strong> qua cuộc đua kinh tế cùng bạn bè.</span></p>
+          <div className="storybook-actions" id="home-actions" tabIndex={-1}>
+            <button className="storybook-cta cta-gold" onClick={()=>{setProfileError('');setLocalSetup(true);}}><HomePixelIcon kind="play"/><span>Chơi Thử Nghiệm<small>Luyện tập cùng bot</small></span></button>
+            <button className="storybook-cta cta-blue" onClick={()=>setModalType('create')}><HomePixelIcon kind="chest"/><span>Tạo Phòng<small>Mời bạn bè tranh tài</small></span></button>
+            <button className="storybook-cta cta-green" onClick={()=>setModalType('join')}><HomePixelIcon kind="people"/><span>Vào Phòng<small>Tham gia bằng mã phòng</small></span></button>
           </div>
-        </header>
-      )}
-
-      {/* Main Content Area */}
-      {isPlayingLocal ? (
-        /* True Fullscreen 100% Viewport Gameplay Layout */
-        <div className="fixed inset-0 z-50 w-screen h-screen overflow-hidden bg-slate-950 flex flex-col">
-          <PhaserGame
-            avatar={profile}
-            onExitGame={exitGameToMenu}
-            onToggleFullscreen={toggleBrowserFullscreen}
-            isFullscreen={isFullscreen}
-            className="w-full h-full"
-          />
+          <div className="storybook-match-facts"><span><b>8</b> phút mỗi trận</span><i aria-hidden="true">◆</i><span><b>2–4</b> người online</span><i aria-hidden="true">◆</i><span><b>10</b> câu hỏi / người</span></div>
+          {!isConnected && <p className="storybook-offline" role="status">Máy chủ đang khởi động. Bạn vẫn có thể chơi thử với bot trong lúc chờ.</p>}
         </div>
-      ) : (
-        /* Standard Home / Lobby View */
-        <main className="max-w-6xl w-full mx-auto px-6 py-8 flex-1 flex flex-col items-center justify-center">
-          <div className="w-full flex flex-col items-center">
-            {/* Hero Section */}
-            {!isConnected && <p role="status" className="mb-4 text-sm text-amber-300 text-center">Máy chủ có thể cần một lúc để khởi động. Game sẽ tự kết nối lại; bạn vẫn có thể chơi thử với bot.</p>}
-            <div className="text-center max-w-2xl mb-10">
-              <div className="inline-flex items-center space-x-2 px-3.5 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-xs font-semibold mb-4">
-                <ShieldCheck className="w-4 h-4" />
-                <span>Chơi cùng bạn bè · Khám phá và học qua từng ô đất</span>
-              </div>
-              <h2 className="text-4xl md:text-6xl font-black tracking-tight text-white mb-4">
-                MARKET MAYHEM
-              </h2>
-              <p className="text-slate-400 text-sm md:text-base leading-relaxed">
-                Chiến trường tranh giành lãnh thổ kinh tế 2D thời gian thực.
-                Mô hình hóa các hình thức biểu hiện của 
-                <span className="text-amber-400 font-semibold"> Giá trị Thặng dư</span> theo Kinh tế Chính trị Mác – Lênin.
-              </p>
-            </div>
-
-            {/* Core Action Buttons: Play, Create Room, Join Room */}
-            <div className="flex flex-col sm:flex-row items-center gap-4 w-full max-w-md mb-12">
-              <button
-                onClick={() => {setProfileError('');setLocalSetup(true);}}
-                className="w-full sm:flex-1 py-3.5 px-6 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 font-bold text-white shadow-lg shadow-cyan-500/25 flex items-center justify-center space-x-2 transition transform active:scale-95"
-              >
-                <Play className="w-5 h-5 fill-current" />
-                <span>Chơi Thử Nghiệm</span>
-              </button>
-
-              <button
-                onClick={() => setModalType('create')}
-                className="w-full sm:flex-1 py-3.5 px-6 rounded-xl bg-slate-800 hover:bg-slate-700 font-bold text-slate-100 border border-slate-700 hover:border-slate-600 flex items-center justify-center space-x-2 transition transform active:scale-95"
-              >
-                <PlusCircle className="w-5 h-5 text-amber-400" />
-                <span>Tạo Phòng</span>
-              </button>
-
-              <button
-                onClick={() => setModalType('join')}
-                className="w-full sm:flex-1 py-3.5 px-6 rounded-xl bg-slate-800 hover:bg-slate-700 font-bold text-slate-100 border border-slate-700 hover:border-slate-600 flex items-center justify-center space-x-2 transition transform active:scale-95"
-              >
-                <LogIn className="w-5 h-5 text-emerald-400" />
-                <span>Vào Phòng</span>
-              </button>
-            </div>
-
-            <HowToPlay/>
-            {/* Economic Zones Preview */}
-            <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-5xl">
-              <div className="p-4 rounded-xl bg-slate-900/60 border border-red-500/20 flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center space-x-2 text-red-400 mb-2 font-bold text-sm">
-                    <Building2 className="w-4 h-4" />
-                    <span>Khu Công Nghiệp</span>
-                  </div>
-                  <p className="text-xs text-slate-400">
-                    Nguồn gốc trực tiếp sinh ra giá trị thặng dư (m) từ lao động thặng dư.
-                  </p>
-                </div>
-                <span className="text-[11px] font-semibold text-red-400/90 mt-3">Lợi nhuận Công nghiệp</span>
-              </div>
-
-              <div className="p-4 rounded-xl bg-slate-900/60 border border-blue-500/20 flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center space-x-2 text-blue-400 mb-2 font-bold text-sm">
-                    <TrendingUp className="w-4 h-4" />
-                    <span>Khu Thương Nghiệp</span>
-                  </div>
-                  <p className="text-xs text-slate-400">
-                    Lưu thông hàng hóa, gia tốc chuyển đổi giá trị thặng dư thành tiền mặt.
-                  </p>
-                </div>
-                <span className="text-[11px] font-semibold text-blue-400/90 mt-3">Lợi nhuận Thương nghiệp</span>
-              </div>
-
-              <div className="p-4 rounded-xl bg-slate-900/60 border border-emerald-500/20 flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center space-x-2 text-emerald-400 mb-2 font-bold text-sm">
-                    <Landmark className="w-4 h-4" />
-                    <span>Khu Tài Chính</span>
-                  </div>
-                  <p className="text-xs text-slate-400">
-                    Lợi tức tích lũy từ lãnh thổ tài chính, chi trả mỗi 2,5 giây. Bốn khu xuất phát có cùng thu nhập cơ bản.
-                  </p>
-                </div>
-                <span className="text-[11px] font-semibold text-emerald-400/90 mt-3">Lợi tức (Interest)</span>
-              </div>
-
-              <div className="p-4 rounded-xl bg-slate-900/60 border border-purple-500/20 flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center space-x-2 text-purple-400 mb-2 font-bold text-sm">
-                    <MapPin className="w-4 h-4" />
-                    <span>Khu Đất Đai</span>
-                  </div>
-                  <p className="text-xs text-slate-400">
-                    Độc quyền sở hữu đất đai, thu địa tô từ người chơi khác khi họ đi qua.
-                  </p>
-                </div>
-                <span className="text-[11px] font-semibold text-purple-400/90 mt-3">Địa tô TBCN (Ground Rent)</span>
-              </div>
-            </div>
-          </div>
-        </main>
-      )}
-
-      {/* Footer */}
-      {!isPlayingLocal && (
-        <footer className="border-t border-slate-800/80 py-4 px-6 text-center text-xs text-slate-500">
-          Market Mayhem © 2026 • Chơi local hoặc cùng bạn bè • Trạm tri thức đồng bộ
-        </footer>
-      )}
-    </div>
-  );
+      </section>
+      <section className="storybook-districts" aria-labelledby="district-heading">
+        <div className="storybook-section-title"><span aria-hidden="true">◆</span><h2 id="district-heading">Bốn khu phố. Bốn cơ hội bứt phá.</h2><span aria-hidden="true">◆</span></div>
+        <div className="storybook-district-grid">{districts.map((district,index)=><article key={district.theme} className={'storybook-district district-'+district.theme}>
+          <div className={'storybook-district-art art-'+index} role="img" aria-label={'Minh họa pixel art '+district.title.toLowerCase()}/>
+          <div className="storybook-district-body"><h3><HomePixelIcon kind={district.icon}/>{district.title}</h3><p>{district.description}</p><span className="storybook-district-reward">{district.reward}</span></div>
+        </article>)}</div>
+        <p className="storybook-learning-note">Cùng một cuộc đua, tiến độ tri thức riêng: trả lời đúng nhận khiên 5 giây; trả lời sai chờ 5 giây. Không chờ cả phòng.</p>
+      </section>
+      <div className="storybook-guide"><HowToPlay/></div>
+    </main>
+    <footer className="storybook-footer"><span aria-hidden="true">◆ ━━━━━ ◆</span><p>Market Mayhem © 2026 <i>·</i> Chơi local hoặc cùng bạn bè <i>·</i> Học qua từng cuộc đua</p><span aria-hidden="true">◆ ━━━━━ ◆</span></footer>
+  </div>;
 };
-
