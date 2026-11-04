@@ -10,8 +10,9 @@ import { socket } from '../../networking/socket';
 import { RegionManager } from '../entities/RegionManager';
 import { DiscoveryPopup } from '../ui/DiscoveryPopup';
 import {ParticleEffects} from '../effects/ParticleEffects';
+import {LocalMotionPrediction,RemoteMotionBuffer} from '../networking/MotionSmoothing';
 
-/** Online scene displays server snapshots only; it never awards land or scores. */
+/** Predict local appearance, interpolate opponents; authority owns land and scores. */
 export class OnlineScene extends Phaser.Scene {
   private grid = new TerritoryGrid(256,256);
   private trails = new TrailManager();
@@ -28,6 +29,10 @@ export class OnlineScene extends Phaser.Scene {
   private discovery!:DiscoveryPopup;
   private effects!:ParticleEffects;
   private lastEffectId=0;
+  private prediction=new LocalMotionPrediction();
+  private remoteMotion=new RemoteMotionBuffer();
+  private lastIntent={dx:0,dy:0,sprint:false};
+  private lastSnapshotTick=-1;
   constructor(private snapshot:OnlineSnapshot,private playerId:string){super({key:'OnlineScene'});}
 
   preload():void {
@@ -58,13 +63,23 @@ export class OnlineScene extends Phaser.Scene {
   private stopInput():void {
     this.game.events.emit('controls:reset');
     this.input.keyboard?.resetKeys();
-    socket.volatile.emit('online:input',this.snapshot.matchId,{sequence:++this.sequence,dx:0,dy:0,sprint:false});
+    this.sendIntent({dx:0,dy:0,sprint:false},performance.now());
+  }
+  private sendIntent(input:{dx:number;dy:number;sprint:boolean},now:number):void {
+    const sequence=++this.sequence;this.prediction.recordSent(sequence,now);
+    socket.volatile.emit('online:input',this.snapshot.matchId,{sequence,...input});
+    this.lastIntent={...input};this.sendTimer=0;
   }
   public applySnapshot(snapshot:OnlineSnapshot):void {
+    if(this.ready && snapshot.tick<this.lastSnapshotTick)return;
     const wasPaused=this.snapshot.paused;
     const wasLearning=this.snapshot.players.find(player=>player.id===this.playerId)?.learning;
     if(!this.ready && !snapshot.territory && this.snapshot.territory) snapshot={...snapshot,territory:this.snapshot.territory};
     this.snapshot=snapshot;if(!this.ready)return;
+    this.lastSnapshotTick=snapshot.tick;
+    const now=performance.now();this.remoteMotion.push(snapshot,now);
+    const me=snapshot.players.find(player=>player.id===this.playerId);
+    if(me)this.prediction.reconcile(me,snapshot.tick,now,snapshot.paused || snapshot.finished || me.learning);
     if(snapshot.paused!==wasPaused || snapshot.players.find(player=>player.id===this.playerId)?.learning!==wasLearning || snapshot.finished)this.stopInput();
     const ids=new Set(snapshot.players.map(player=>player.id));
     for(const [id,renderer]of this.renderers)if(!ids.has(id)){renderer.destroy();this.renderers.delete(id);this.trails.clearTrail(id);}
@@ -98,22 +113,21 @@ export class OnlineScene extends Phaser.Scene {
   }
   update(_time:number,delta:number):void {
     if(!this.ready)return;
+    const now=performance.now();
+    const me=this.snapshot.players.find(player=>player.id===this.playerId);
+    const blocked=this.snapshot.paused || this.snapshot.finished || !me || me.learning;
+    const input=blocked?{dx:0,dy:0,sprint:false}:this.controls.getMovementInput();
     this.sendTimer+=delta;
-    if(this.sendTimer>=50){
-      this.sendTimer=0;const input=this.controls.getMovementInput();
-      if(!this.snapshot.paused && !this.snapshot.finished && !this.snapshot.players.find(player=>player.id===this.playerId)?.learning)socket.volatile.emit('online:input',this.snapshot.matchId,
-        {sequence:++this.sequence,dx:input.dx,dy:input.dy,sprint:input.sprint});
-    }
+    const predicted=this.prediction.advance(now,input);
+    if(!blocked && (this.sendTimer>=50 || input.dx!==this.lastIntent.dx || input.dy!==this.lastIntent.dy || input.sprint!==this.lastIntent.sprint))this.sendIntent({dx:input.dx,dy:input.dy,sprint:input.sprint},now);
     for(const player of this.snapshot.players){
       const renderer=this.renderers.get(player.id)!;
-      const position=renderer.getContainer();
-      const alpha=this.snapshot.paused || this.snapshot.finished?1:1-Math.exp(-delta/45);
-      const snap=Math.hypot(player.x-position.x,player.y-position.y)>128;
-      const x=snap?player.x:Phaser.Math.Linear(position.x,player.x,alpha);
-      const y=snap?player.y:Phaser.Math.Linear(position.y,player.y,alpha);
+      const motion=player.id===this.playerId?(predicted??player):(this.remoteMotion.sample(player.id,now)??player);
+      const {x,y}=motion;
       const frozen=this.snapshot.paused || this.snapshot.finished || player.learning;
-      renderer.update(x,y,frozen?0:player.vx,frozen?0:player.vy,player.shield>0 || player.learning);
+      renderer.update(x,y,frozen?0:motion.vx,frozen?0:motion.vy,player.shield>0 || player.learning);
       const sprint=new SprintAbility();sprint.rage=player.rage;sprint.isSprinting=player.sprinting && !frozen;sprint.exhausted=player.exhausted;
+      if(player.id===this.playerId && predicted && !frozen)sprint.isSprinting=predicted.sprint.isSprinting;
       renderer.updateSprint(sprint);
       if(player.id===this.playerId && !this.snapshot.finished){
         const transition=this.regions.updatePlayerPosition(player.x,player.y);

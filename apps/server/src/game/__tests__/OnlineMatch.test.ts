@@ -6,6 +6,19 @@ const members = ['one','two','three'].map((id,i)=>({id,nickname:id,character:i,c
 const simulate=(match:OnlineMatch,seconds:number)=>{for(let i=0;i<Math.round(seconds*60);i++)match.step();};
 const correctFor=(id:string)=>LEARNING_QUESTIONS.find(question=>question.id===id)!.correctIndex;
 describe('Authoritative online match',()=>{
+  it('acknowledges normalized input and publishes sprint state without trusting client positions',()=>{
+    const match=new OnlineMatch(members);
+    match.input('one',{sequence:42,dx:1,dy:1,sprint:true});match.step();
+    const p=match.snapshot().players.find(player=>player.id==='one')!;
+    expect(p.lastInputSequence).toBe(42);expect(p.inputAgeSeconds).toBeCloseTo(1/60);
+    expect(p.sprintRecoveryDelaySeconds).toBe(1);expect(p.motionRevision).toBe(0);
+    const actor=match.actors.get('one')!;actor.shield=0;actor.x=1224;actor.y=1208;actor.vx=actor.vy=0;
+    match.trails.addPoint('one',75,75);const other=match.actors.get('two')!;other.x=1208;other.y=1208;match.step();
+    expect(match.snapshot().players.find(player=>player.id==='one')!.motionRevision).toBe(1);
+    match.quiz.elapsedSeconds=60;match.step();const quiz=match.quiz.viewFor('one')!;
+    match.answer('one',quiz.roundId,correctFor(quiz.question.id));match.continue('one',quiz.roundId);
+    expect(match.snapshot().players.find(player=>player.id==='one')!.motionRevision).toBe(2);
+  });
   it('records ten answers per player through a full eight-minute match without extra questions',()=>{
     const match=new OnlineMatch(members);let elapsed=0;
     const seen=new Set<string>();

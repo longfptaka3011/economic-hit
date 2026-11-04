@@ -1,13 +1,13 @@
 import { randomUUID } from 'node:crypto';
 import { RaceQuizDirector, SprintAbility, TerritoryGrid, TrailManager, TerritoryCaptureSystem, GAME_CONSTANTS, EconomySystem,learningOutcome,MatchRecorder,
-  type OnlineMember, type OnlineInput, type OnlineSnapshot, type OnlinePlayer } from '@market-mayhem/shared';
+  stepOnlineMotion, type OnlineMember, type OnlineInput, type OnlineSnapshot, type OnlinePlayer } from '@market-mayhem/shared';
 
 const SPAWNS = [{col:64,row:64},{col:190,row:64},{col:64,row:190},{col:190,row:190}];
 const STOP: OnlineInput = { sequence: -1, dx: 0, dy: 0, sprint: false };
 interface Actor {
   member: OnlineMember; x: number; y: number; vx: number; vy: number;
   spawn: {col:number;row:number}; sprint: SprintAbility; shield: number; score: number;
-  input: OnlineInput; inputAge: number; sequence: number;
+  input: OnlineInput; inputAge: number; sequence: number; motionRevision:number;
 }
 
 /** Authoritative fixed-step world: clients send only intent, never position or score. */
@@ -32,7 +32,7 @@ export class OnlineMatch {
       const spawn = SPAWNS[i];
       this.economy.registerPlayer(member.id);const economy=this.economy;
       this.actors.set(member.id, { member, spawn, x: spawn.col*16+8, y: spawn.row*16+8, vx:0, vy:0,
-        sprint: new SprintAbility(), shield:3.5, get score(){return economy.getProfile(member.id).totalProfit;}, input:STOP, inputAge:0, sequence:-1 });
+        sprint: new SprintAbility(), shield:3.5, get score(){return economy.getProfile(member.id).totalProfit;}, input:STOP, inputAge:0, sequence:-1,motionRevision:0 });
       this.grid.spawnTerritory(member.id, spawn.col, spawn.row, 2);
       this.recorder.register(member.id,this.grid.getOwnerCellsCount(member.id));
     });
@@ -68,6 +68,7 @@ export class OnlineMatch {
     const outcome=learningOutcome(answer.correct,actor.sprint.rage);
     actor.shield=outcome.shieldSeconds;actor.sprint.rage=outcome.rage;
     actor.input=STOP;actor.vx=0;actor.vy=0;actor.inputAge=0;
+    actor.motionRevision++;
     this.quizVersion++;
     return true;
   }
@@ -89,6 +90,7 @@ export class OnlineMatch {
     this.grid.spawnTerritory(id, actor.spawn.col, actor.spawn.row, 2);
     actor.x = actor.spawn.col*16+8; actor.y = actor.spawn.row*16+8;
     actor.vx = 0; actor.vy = 0; actor.input = STOP; actor.sprint.reset(); actor.shield = 3.5;
+    actor.motionRevision++;
     this.revision++;
   }
 
@@ -105,14 +107,7 @@ export class OnlineMatch {
       actor.shield = Math.max(0, actor.shield - dt);
       actor.inputAge += dt;
       if (actor.inputAge > .5) actor.input = STOP;
-      const {dx,dy,sprint} = actor.input;
-      const speed = 175 * actor.sprint.update(dt, sprint, dx !== 0 || dy !== 0);
-      const response = Math.min(1,850*dt/175);
-      actor.vx += (dx*speed-actor.vx)*response; actor.vy += (dy*speed-actor.vy)*response;
-      const magnitude = Math.hypot(actor.vx, actor.vy);
-      if (magnitude > speed) { actor.vx *= speed/magnitude; actor.vy *= speed/magnitude; }
-      actor.x = Math.max(14, Math.min(4082, actor.x + actor.vx*dt));
-      actor.y = Math.max(14, Math.min(4082, actor.y + actor.vy*dt));
+      stepOnlineMotion(actor,actor.input,dt);
     }
     // Determine simultaneous cuts before captures can remove a vulnerable trail.
     const victims = new Map<string,string>();
@@ -144,6 +139,7 @@ export class OnlineMatch {
   snapshot(includeTerritory = false): OnlineSnapshot {
     const players: OnlinePlayer[] = [...this.actors.values()].map(a=>({...a.member,x:a.x,y:a.y,vx:a.vx,vy:a.vy,
       rage:a.sprint.rage,sprinting:a.sprint.isSprinting,exhausted:a.sprint.exhausted,shield:a.shield,score:a.score,learning:!this.finished && this.quiz.isLearning(a.member.id),
+      lastInputSequence:a.sequence,inputAgeSeconds:a.inputAge,motionRevision:a.motionRevision,sprintRecoveryDelaySeconds:a.sprint.recoveryDelaySeconds,
       ownedCells:this.grid.getOwnerCellsCount(a.member.id),economy:this.economy.getStatus(a.member.id)}));
     const territory: NonNullable<OnlineSnapshot['territory']>=[];
     if(includeTerritory)for(const id of this.actors.keys())for(const cell of this.grid.getAllOwnedCells(id))territory.push({...cell,owner:id});

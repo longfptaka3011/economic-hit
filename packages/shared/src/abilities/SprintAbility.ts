@@ -14,6 +14,13 @@ export class SprintAbility {
   public exhausted = false;
   private recoveryDelay = 0;
 
+  public get recoveryDelaySeconds(): number { return this.recoveryDelay; }
+  public restore(state:{rage:number;sprinting:boolean;exhausted:boolean;recoveryDelaySeconds:number}):void {
+    this.rage=Math.max(0,Math.min(SPRINT_CONFIG.maxRage,state.rage));
+    this.isSprinting=state.sprinting;this.exhausted=state.exhausted;
+    this.recoveryDelay=Math.max(0,Math.min(SPRINT_CONFIG.recoveryDelaySeconds,state.recoveryDelaySeconds));
+  }
+
   /** Returns the movement multiplier for this tick, including partial depletion. */
   public update(deltaSec: number, requested: boolean, moving: boolean): number {
     if (!Number.isFinite(deltaSec) || deltaSec <= 0) return 1;

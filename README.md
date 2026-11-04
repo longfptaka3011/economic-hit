@@ -8,6 +8,8 @@
 
 **Điều khiển:** WASD/mũi tên + giữ Space; điện thoại có phím hướng và nút CHẠY. Phaser chỉ tải khi vào trận. CI kiểm tra build, tests và container production trên mỗi lần push `main`.
 
+**Chuyển động online:** phản hồi ngay bằng dự đoán hình ảnh nhân vật, hiệu chỉnh theo server; đối thủ được nội suy qua bộ đệm 120ms. Server vẫn quyết định va chạm, đất và điểm. [Cơ chế và kiểm thử](docs/ONLINE_MOVEMENT.md).
+
 **Câu hỏi cạnh tranh:** tiến độ trả lời độc lập, không chờ cả phòng; trả lời sai phải chờ đủ hình phạt trước khi đi tiếp. Người đang làm bài đứng yên và được bảo vệ khỏi bị cắt đuôi; bot/đối thủ và đồng hồ vẫn chạy. Popup giới thiệu vùng có trong cả local và online, không khóa di chuyển.
 
 **Thưởng/phạt tri thức:** Mỗi người 10 câu không trùng/trận, 2 câu/chủ đề từ ngân hàng 75 câu. Phát từ 1:00, mỗi 40 giây đến 7:00. Đúng: khiên 5 giây từ lúc đi tiếp và hồi tối đa 20 nộ. Sai: phải chờ 5 giây, không nộ, xóa khiên cũ khi đi tiếp. Không chờ cả phòng. Lobby có quảng trường pixel art, bốn vị trí chờ và bảng mã mời. [Ngân hàng câu hỏi và giải thích](docs/LEARNING_QUESTIONS.md).

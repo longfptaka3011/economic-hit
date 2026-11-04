@@ -13,6 +13,8 @@ export interface OnlinePlayer extends OnlineMember {
   x: number; y: number; vx: number; vy: number; rage: number; sprinting: boolean; exhausted: boolean;
   shield: number; score: number; ownedCells: number;
   learning: boolean;
+  lastInputSequence:number; inputAgeSeconds:number;
+  motionRevision:number; sprintRecoveryDelaySeconds:number;
   economy: EconomyStatus;
 }
 export interface OnlineSnapshot {
