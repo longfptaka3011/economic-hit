@@ -29,7 +29,7 @@ describe('Learning checkpoints', () => {
     expect(quiz.canContinue).toBe(true);
     expect(quiz.finish(round.id)?.size).toBe(2);
     expect(quiz.finish(round.id)).toBeNull();
-    expect(quiz.update(120)?.stageId).toBe('trade');
+    expect(quiz.update(40)?.stageId).toBe('foundation-practice');
   });
 
   it('rejects stale, duplicate, unknown-player and malformed answers', () => {
@@ -43,7 +43,7 @@ describe('Learning checkpoints', () => {
     expect(quiz.finish('old-round')).toBeNull();
   });
 
-  it('delivers each of the five scheduled topics once, with no repeated question', () => {
+  it('delivers all ten scheduled stages with no repeated question', () => {
     const quiz = new QuizDirector(['p1'], () => 0);
     const seen = new Set<string>();
     for (const stage of LEARNING_STAGES) {
@@ -73,7 +73,7 @@ describe('Learning checkpoints', () => {
     quiz.submit(milestone.id, 'p1', 0);
     quiz.finish(milestone.id);
     quiz.requestCrisis('interest');
-    expect(quiz.update(80)).toBeNull();
+    expect(quiz.update(39)).toBeNull();
   });
 
   it('ignores invalid time, de-duplicates participants, and rejects empty sessions', () => {

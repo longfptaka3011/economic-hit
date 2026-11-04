@@ -4,19 +4,24 @@ Nguồn đối chiếu: **Giao-Trinh-Kinh-Te-Chinh-Tri-Mac-Lenin-.pdf** do ngư�
 
 Chủ đề thuộc **Kinh tế chính trị Mác–Lênin**: lợi nhuận, lợi nhuận thương nghiệp, lợi tức, địa tô; lợi nhuận bình quân và giá cả sản xuất để kết nối các hình thái.
 
-Ngân hàng gồm **75 câu, 15 câu cho mỗi chủ đề**. Mỗi câu có bốn lựa chọn, đáp án, giải thích và trang đối chiếu. Giữ năm mốc hỏi trong trận; tăng độ đa dạng giữa các lượt chơi, không tăng số lần ngắt nhịp trận.
+Ngân hàng gồm **75 câu, 15 câu cho mỗi chủ đề**. Mỗi câu có bốn lựa chọn, đáp án, giải thích và trang đối chiếu. Mỗi người nhận **10 câu không trùng trong trận**, hai câu cho mỗi chủ đề.
 
 ## Nhịp học trong trận 8 phút
 
 | Thời gian chơi | Chặng |
 |---|---|
 | 01:00 | Khởi nghiệp: hiểu lợi nhuận |
-| 02:30 | Mở rộng: lưu thông hàng hóa |
-| 04:00 | Tăng trưởng: vốn và lợi tức |
-| 05:30 | Cạnh tranh: đất đai và địa tô |
+| 01:40 | Khởi nghiệp: vận dụng lợi nhuận |
+| 02:20 | Mở rộng: lưu thông hàng hóa |
+| 03:00 | Mở rộng: lợi nhuận thương nghiệp |
+| 03:40 | Tăng trưởng: vốn và lợi tức |
+| 04:20 | Tăng trưởng: phân chia lợi nhuận |
+| 05:00 | Cạnh tranh: đất đai và địa tô |
+| 05:40 | Cạnh tranh: vận dụng địa tô |
+| 06:20 | Bứt phá: tổng hợp kiến thức |
 | 07:00 | Về đích: kết nối các hình thức |
 
-Mỗi chặng chọn một câu ngẫu nhiên đúng chủ đề, giống nhau cho cả phòng; không lặp câu trong trận. Mỗi người có tối đa một trạm cứu nguy riêng sau khi bị cắt đuôi từ giây 30 trở đi, cách lần phát câu hỏi trước ít nhất 90 giây. Mốc định kỳ được ưu tiên. Câu mới xếp hàng nếu người đó chưa đọc xong câu trước, không ghi đè câu đang trả lời.
+Mỗi chặng chọn một câu ngẫu nhiên đúng chủ đề, giống nhau cho cả phòng; không lặp câu trong trận. Không phát thêm câu cứu nguy khi bị cắt đuôi, bảo đảm tối đa 10 câu mỗi người. Câu mới xếp hàng nếu người đó chưa đọc xong câu trước, không ghi đè câu đang trả lời. Đây là lịch phát 10 câu cho người chơi còn trong trận; không ép chờ trả lời đủ khi hết giờ hoặc khi đối thủ đã rời hết.
 
 ## Quy tắc
 

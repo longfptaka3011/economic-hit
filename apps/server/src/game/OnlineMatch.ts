@@ -90,7 +90,6 @@ export class OnlineMatch {
     actor.x = actor.spawn.col*16+8; actor.y = actor.spawn.row*16+8;
     actor.vx = 0; actor.vy = 0; actor.input = STOP; actor.sprint.reset(); actor.shield = 3.5;
     this.revision++;
-    this.quiz.requestCrisis(id,'profit');
   }
 
   step(dt = 1/60): void {

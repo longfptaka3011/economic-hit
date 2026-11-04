@@ -4,8 +4,7 @@ import { LEARNING_RULES } from './learningRules.js';
 
 interface Challenge { round:QuizRound; answers:Map<string,QuizAnswer>; answeredAt:Map<string,number> }
 interface Learner {
-  queue:Challenge[]; completed:Set<string>; pendingCrisis:LearningTopic|null;
-  crisisUsed:boolean; lastQuestionAt:number;
+  queue:Challenge[]; completed:Set<string>;
 }
 
 /** One real-time schedule, shared questions, and independent answer/review gates.
@@ -18,14 +17,10 @@ export class RaceQuizDirector {
   private nextId=0;
 
   constructor(ids:readonly string[],private random:()=>number=Math.random){
-    ids.filter(Boolean).forEach(id=>this.learners.set(id,{queue:[],completed:new Set(),pendingCrisis:null,crisisUsed:false,lastQuestionAt:-Infinity}));
+    ids.filter(Boolean).forEach(id=>this.learners.set(id,{queue:[],completed:new Set()}));
     if(!this.learners.size)throw new Error('A learning session needs a human participant');
   }
   public isLearning(id:string):boolean {return !!this.learners.get(id)?.queue.length;}
-  public requestCrisis(id:string,topic:LearningTopic):void {
-    const learner=this.learners.get(id);
-    if(learner && this.elapsedSeconds>=30 && !learner.crisisUsed)learner.pendingCrisis=topic;
-  }
   public removeParticipant(id:string):void {
     this.learners.delete(id);
     for(const learner of this.learners.values())for(const challenge of learner.queue){challenge.answers.delete(id);challenge.answeredAt.delete(id);}
@@ -53,14 +48,8 @@ export class RaceQuizDirector {
       if(this.issued.has(stage.id) || this.elapsedSeconds<stage.atSeconds)continue;
       this.issued.add(stage.id);
       const challenge=this.challenge(stage.id,stage.title,stage.topic,'milestone');if(!challenge)continue;
-      for(const learner of this.learners.values()){learner.queue.push(challenge);learner.lastQuestionAt=this.elapsedSeconds;}
+      for(const learner of this.learners.values())learner.queue.push(challenge);
       changed=true;
-    }
-    for(const learner of this.learners.values()){
-      if(!learner.pendingCrisis || learner.queue.length || this.elapsedSeconds-learner.lastQuestionAt<90)continue;
-      const challenge=this.challenge('crisis','Cứu nguy: nhìn rõ thị trường',learner.pendingCrisis,'crisis');
-      learner.pendingCrisis=null;learner.crisisUsed=true;
-      if(challenge){learner.queue.push(challenge);learner.lastQuestionAt=this.elapsedSeconds;changed=true;}
     }
     return changed;
   }

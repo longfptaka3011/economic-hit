@@ -2,9 +2,14 @@ import { LEARNING_QUESTIONS, LearningQuestion, LearningTopic } from './questions
 
 export const LEARNING_STAGES = [
   { id: 'foundation', atSeconds: 60, topic: 'profit', title: 'Khởi nghiệp: hiểu lợi nhuận' },
-  { id: 'trade', atSeconds: 150, topic: 'commercial', title: 'Mở rộng: lưu thông hàng hóa' },
-  { id: 'credit', atSeconds: 240, topic: 'interest', title: 'Tăng trưởng: vốn và lợi tức' },
-  { id: 'land', atSeconds: 330, topic: 'rent', title: 'Cạnh tranh: đất đai và địa tô' },
+  { id: 'foundation-practice', atSeconds: 100, topic: 'profit', title: 'Khởi nghiệp: vận dụng lợi nhuận' },
+  { id: 'trade', atSeconds: 140, topic: 'commercial', title: 'Mở rộng: lưu thông hàng hóa' },
+  { id: 'trade-practice', atSeconds: 180, topic: 'commercial', title: 'Mở rộng: lợi nhuận thương nghiệp' },
+  { id: 'credit', atSeconds: 220, topic: 'interest', title: 'Tăng trưởng: vốn và lợi tức' },
+  { id: 'credit-practice', atSeconds: 260, topic: 'interest', title: 'Tăng trưởng: phân chia lợi nhuận' },
+  { id: 'land', atSeconds: 300, topic: 'rent', title: 'Cạnh tranh: đất đai và địa tô' },
+  { id: 'land-practice', atSeconds: 340, topic: 'rent', title: 'Cạnh tranh: vận dụng địa tô' },
+  { id: 'review-practice', atSeconds: 380, topic: 'synthesis', title: 'Bứt phá: tổng hợp kiến thức' },
   { id: 'review', atSeconds: 420, topic: 'synthesis', title: 'Về đích: kết nối các hình thức' },
 ] as const;
 

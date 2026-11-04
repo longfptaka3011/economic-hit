@@ -12,9 +12,9 @@ describe('Player setup',()=>{
     expect(parseAvatarProfile(null)).toBeNull();
     expect(parseAvatarProfile('An')).toBeNull();
   });
-  it('uses eight minutes for both modes and fits all five learning stages before the end',()=>{
+  it('uses eight minutes for both modes and fits all ten learning stages before the end',()=>{
     expect(GAME_CONSTANTS.MATCH_DURATION_SECONDS).toBe(480);
-    expect(LEARNING_STAGES.map(s=>s.atSeconds)).toEqual([60,150,240,330,420]);
+    expect(LEARNING_STAGES.map(s=>s.atSeconds)).toEqual([60,100,140,180,220,260,300,340,380,420]);
     expect(LEARNING_STAGES.every(s=>s.atSeconds<GAME_CONSTANTS.MATCH_DURATION_SECONDS)).toBe(true);
   });
 });

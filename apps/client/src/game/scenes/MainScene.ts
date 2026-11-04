@@ -348,7 +348,6 @@ export class MainScene extends Phaser.Scene {
         this.recorder.cut(this.bot.id,this.player.id,this.player.x,this.player.y);this.publishFeedback();
         this.particleEffects.emitEliminationParticles(this.player.x, this.player.y, this.avatar.color);
         this.respawnPlayer();
-        this.quizDirector.requestCrisis(this.player.id,'profit');
         return;
       }
     }

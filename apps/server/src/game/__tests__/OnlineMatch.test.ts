@@ -1,11 +1,30 @@
 import { describe, expect, it } from 'vitest';
 import { OnlineMatch } from '../OnlineMatch.js';
-import { LEARNING_QUESTIONS } from '@market-mayhem/shared';
+import { LEARNING_QUESTIONS, LEARNING_STAGES } from '@market-mayhem/shared';
 
 const members = ['one','two','three'].map((id,i)=>({id,nickname:id,character:i,color:i,ready:true}));
 const simulate=(match:OnlineMatch,seconds:number)=>{for(let i=0;i<Math.round(seconds*60);i++)match.step();};
 const correctFor=(id:string)=>LEARNING_QUESTIONS.find(question=>question.id===id)!.correctIndex;
 describe('Authoritative online match',()=>{
+  it('records ten answers per player through a full eight-minute match without extra questions',()=>{
+    const match=new OnlineMatch(members);let elapsed=0;
+    const seen=new Set<string>();
+    for(const stage of LEARNING_STAGES){
+      simulate(match,stage.atSeconds-elapsed+.02);elapsed=stage.atSeconds+.02;
+      const view=match.quiz.viewFor('one')!;expect(view.totalStages).toBe(10);seen.add(view.question.id);
+      for(const member of members){
+        expect(match.quiz.viewFor(member.id)?.question.id).toBe(view.question.id);
+        expect(match.answer(member.id,view.roundId,correctFor(view.question.id))).toBe(true);
+        expect(match.continue(member.id,view.roundId)).toBe(true);
+      }
+    }
+    expect(seen.size).toBe(10);simulate(match,61);
+    expect(match.finished).toBe(true);
+    for(const member of members){
+      expect(match.quiz.viewFor(member.id)).toBeNull();
+      expect(match.recorder.forPlayer(member.id)).toMatchObject({questionsAnswered:10,questionsCorrect:10});
+    }
+  });
   it('accepts only fresh valid intent and caps sprint movement, including diagonals',()=>{
     const match=new OnlineMatch(members);
     expect(match.input('outsider',{sequence:1,dx:1,dy:0,sprint:false})).toBe(false);

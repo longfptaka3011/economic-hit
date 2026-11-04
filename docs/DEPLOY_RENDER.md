@@ -6,7 +6,7 @@
 
 - Trận local và online đều 8 phút (480 giây, bao gồm thời gian đọc câu hỏi; chỉ menu pause local dừng đồng hồ).
 - Câu hỏi mở khóa độc lập: trả lời, đọc giải thích rồi tiếp tục ngay. Người đang làm bài đứng yên và được bảo vệ khỏi cắt đuôi; đối thủ vẫn chơi.
-- Trạm câu hỏi theo mốc 1:00, 2:30, 4:00, 5:30, 7:00.
+- Mỗi người 10 câu không trùng: từ 1:00, cách nhau 40 giây đến 7:00; hai câu/chủ đề. Không phát thêm câu khi bị loại.
 - Trước khi chơi phải nhập tên nhân vật 2–24 ký tự; không chấp nhận toàn khoảng trắng.
 - Chọn một trong 6 nhân vật và 8 màu trang phục. Màu cũng dùng cho tên/lãnh thổ. Mỗi người trong cùng phòng online dùng màu khác nhau để dễ phân biệt; có thể đổi lại ở lobby, sau đó cần sẵn sàng lại.
 - Ngoại hình được server xác minh và đưa vào snapshot; các máy nhìn thấy cùng nhân vật/màu. Preview và sprite trong game dùng cùng cách lấy frame và tô màu vùng áo, không đổi màu tóc/da toàn bộ bằng tint.

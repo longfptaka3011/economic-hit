@@ -7,6 +7,7 @@ import { LearningOverlay } from '../game/ui/LearningOverlay';
 import { HowToPlay } from '../components/HowToPlay';
 import { RaceHUD } from '../game/ui/RaceHUD';
 import {MatchResults} from '../game/ui/MatchResults';
+import {LobbyCity} from '../components/LobbyCity';
 
 function OnlineMiniMap({snapshot}:{snapshot:OnlineSnapshot}) {
   const ref=useRef<HTMLCanvasElement>(null);
@@ -89,23 +90,25 @@ export function OnlineLobby({initialMode,initialProfile,onExit}:{initialMode:'cr
       </>}/>}
     </div>;
   }
-  return <main className="online-shell"><section className="online-card"><div className="eyebrow">MARKET MAYHEM · MULTIPLAYER</div>
+  return <main className="online-shell lobby-shell"><div className="lobby-layout">
+    <header className="lobby-hero"><div className="lobby-hero-copy"><div className="eyebrow">MARKET MAYHEM · ONLINE</div><h2>Thành phố nhỏ.<br/><em>Tham vọng lớn.</em></h2><p>Gặp gỡ đối thủ, xây dựng đế chế và biến kiến thức thành lợi thế.</p><div className="lobby-facts"><span><b>2–4</b> người chơi</span><span><b>8</b> phút tranh tài</span><span><b>10</b> câu / người</span></div><span className={`lobby-connection ${connected?'is-connected':''}`} role="status">● {connected?'Máy chủ đã kết nối':'Đang kết nối máy chủ…'}</span></div><LobbyCity players={room?.members??[profile]}/></header>
+    <section className="online-card"><div className="lobby-section-heading"><div><div className="eyebrow">{room?'QUẢNG TRƯỜNG XUẤT PHÁT':'HỒ SƠ NHÀ KINH DOANH'}</div>
     <h1>{room?`Phòng ${room.code}`:initialMode==='create'?'Tạo phòng mới':'Tham gia phòng'}</h1>
-    <p>{connected?'Máy chủ đã kết nối':'Đang chờ kết nối máy chủ…'}</p>
+    </div>{room && <div className="lobby-room-code"><small>MÃ MỜI BẠN BÈ</small><strong>{room.code}</strong></div>}</div>
     {!room || editing?<form onSubmit={enter}>
       <AvatarSetup value={profile} onChange={setProfile} unavailableColors={room?.members.filter(member=>member.id!==socket.id).map(member=>member.color)}/>
       {!room && initialMode==='join' && <label>Mã phòng (6 chữ số)<input required inputMode="numeric" pattern="[0-9]{6}" maxLength={6} value={code} onChange={e=>setCode(e.target.value.replace(/\D/g,''))}/></label>}
       <button className="pixel-button primary" disabled={busy || !connected}>{busy?'ĐANG KẾT NỐI…':room?'LƯU NHÂN VẬT':initialMode==='create'?'TẠO PHÒNG · 8 PHÚT':'VÀO PHÒNG'}</button>
       {room && <button type="button" className="learning-exit" onClick={()=>{setEditing(false);setError('');}}>Hủy thay đổi</button>}</form>:<>
       <p>Chia sẻ mã <strong>{room.code}</strong> với bạn bè. Từ 2–4 người; mọi người bật sẵn sàng trước khi bắt đầu.</p>
-      <ul className="online-members">{room.members.map(member=><li key={member.id}><AvatarPreview character={member.character} color={member.color} size={48}/><span style={{color:'#'+member.color.toString(16).padStart(6,'0')}}>{member.nickname}{member.id===socket.id?' (Bạn)':''}{member.id===room.hostId?' · Chủ phòng':''}</span><strong>{member.ready?'Sẵn sàng':'Chưa sẵn sàng'}</strong></li>)}</ul>
+      <ul className="online-members lobby-roster">{Array.from({length:4},(_,index)=>{const member=room.members[index];return <li key={member?.id??index} className={member?.ready?'is-ready':member?'':'empty-seat'}>{member?<><div className="lobby-player-portrait" style={{borderColor:'#'+member.color.toString(16).padStart(6,'0')}}><AvatarPreview character={member.character} color={member.color} size={64}/></div><div className="lobby-player-name"><span>{member.nickname}{member.id===socket.id?' (Bạn)':''}</span><small>{member.id===room.hostId?'★ Chủ phòng':'Nhà kinh doanh'}</small></div><strong>{member.ready?'✓ Sẵn sàng':'Đang chuẩn bị'}</strong></>:<><div className="lobby-empty-icon">+</div><span>Chờ người chơi</span><small>Chia sẻ mã để mời bạn</small></>}</li>;})}</ul>
       <button className="pixel-button secondary" onClick={()=>{setProfile({nickname:me!.nickname,character:me!.character,color:me!.color});setEditing(true);setError('');}}>ĐỔI NHÂN VẬT / MÀU</button>
       <div className="room-actions"><button className="pixel-button secondary" onClick={()=>socket.emit('online:ready',!me?.ready)}>{me?.ready?'HỦY SẴN SÀNG':'SẴN SÀNG'}</button>
         {host && <button className="pixel-button primary" disabled={room.members.length<2 || !room.members.every(m=>m.ready)} onClick={()=>socket.emit('online:start')}>BẮT ĐẦU</button>}</div>
-      <p className="online-tip">Trả lời đúng: đi tiếp với khiên 5 giây và hồi tối đa 20 nộ. Sai: chờ 5 giây rồi mới đi tiếp, không thưởng nộ và xóa khiên cũ. Người đang làm bài/chờ phạt đứng yên, không bị cắt đuôi và cũng không thể cắt đuôi ai; đồng hồ vẫn chạy. Không chờ cả phòng.</p>
+      <p className="online-tip">10 câu/người, từ phút 1:00 đến 7:00. Đúng: khiên 5 giây và hồi tối đa 20 nộ. Sai: chờ 5 giây, không thưởng nộ và xóa khiên cũ. Khi làm bài/chờ phạt, bạn đứng yên và được bảo vệ hai chiều. Trả lời xong được đi tiếp riêng; đồng hồ vẫn chạy.</p>
       <HowToPlay/>
     </>}
     {error && <p role="alert" className="online-error">{error}</p>}
     <button className="learning-exit" onClick={exit}>{room?'Rời phòng':'Về trang chủ'}</button>
-  </section></main>;
+  </section><footer className="lobby-footer">CHIẾM ĐẤT · TÍCH LŨY LỢI NHUẬN · CHINH PHỤC KIẾN THỨC</footer></div></main>;
 }
